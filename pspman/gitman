@@ -328,11 +328,19 @@ function auto_install () {
 function new_install() {
     mkdir -p "$CLONE_DIR"
     if [[ -n $URI ]]; then
-        package=$(echo "$URI" \
-                      | rev \
-                      | cut -d "/" -f 1 \
-                      | rev \
-                      | cut -d "." -f 1)
+        if [[ $"URI" =~ ":"]]; then
+            package=$(echo "$URI" \
+                          | rev \
+                          | cut -d ":" -f 1 \
+                          | rev \
+                          | cut -d "." -f 1)
+        else
+            package=$(echo "$URI" \
+                          | rev \
+                          | cut -d "/" -f 1 \
+                          | rev \
+                          | cut -d "." -f 1)
+        fi
         package_dir="${CLONE_DIR}/${package}"
         if [[ -d "$package_dir" ]]; then
             echo "[WARNING] $package appears to be installed already"
