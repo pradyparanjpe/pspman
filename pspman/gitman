@@ -328,7 +328,7 @@ function auto_install () {
 function new_install() {
     mkdir -p "$CLONE_DIR"
     if [[ -n $URI ]]; then
-        if [[ $"URI" =~ ":" ]]; then
+        if [[ "$URI" =~ ":" ]]; then
             package=$(echo "$URI" \
                           | rev \
                           | cut -d ":" -f 1 \
