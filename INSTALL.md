@@ -26,7 +26,7 @@ This App might not work for you, since you didn't have to pay for it.
   ```
   - configure and make
   ```
-  ./configure && make
+  cd ${HOME}/programs/pspman && ./configure && make
   ```
 
 # UNINSTALL
