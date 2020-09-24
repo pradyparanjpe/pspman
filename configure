@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+prefix=
+while test $# -gt 0; do
+    case $1 in
+    --prefix)
+        shift
+        prefix=$1
+        shift
+    ;;
+    --prefix=*)
+        prefix=$(echo "${1}" | cut -d "=" -f 2)
+        shift
+    ;;
+    -h|--help)
+        echo "usage: ./configure [--prefix=PREFIX]"
+		exit 1
+    ;;
+    *)
+        echo "usage: ./configure [--prefix=PREFIX]"
+        exit 1
+    ;;
+    esac
+done
+
+touch Makefile
+printf "" > Makefile
+echo "prefix=${prefix}" >> Makefile
+prefix=
+echo "all:" >> Makefile
+echo "	@cp pspman/gitman \$(prefix)/bin" >> Makefile
+echo "clean:" >> Makefile
+echo "	rm \$(prefix)/bin/gitman" >> Makefile
+echo "install:" >> Makefile
+echo "	@true" >> Makefile
+
