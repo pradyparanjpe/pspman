@@ -1,5 +1,5 @@
 # PSPMAN
-  **P**ersonal **S***imple **P**ackage **Man**ager (pspman) is a manager that does only the following
+  **P**ersonal **S**imple **P**ackage **Man**ager (pspman) is a manager that does only the following
 
   - Clone git projects based on URL
   - Update existing git projects
@@ -18,24 +18,24 @@
 
 # Installation
 ## Windows
-    Sorry
+Sorry
 ## Apple Mac
-    This program might not work for you, since you didn't have to pay for it.
+This program might not work for you, since you didn't have to pay for it.
 ## Linux
-  Recursive (Use me to install myself)
+   (Use me to install myself)
   - Create a user's bin directory [default: `${HOME}/bin`]
   ```
   mkdir -p ${HOME}/bin
   ```
   - Add `${HOME}/bin` to PATH environment variable if necessary.
   ```
-  echo "export PATH=\"${PATH}\:${HOME}/bin\"" >> ${HOME}/.bashrc
+  echo "export PATH=\"\${PATH}:${HOME}/bin\"" >> ${HOME}/.bashrc
   ```
   - Create a programs directory [default: `${HOME}/programs`]
   ```
   mkdir ${HOME}/programs && cd ${HOME}/programs
   ```
-  - Clone [[https://github.com/pradyparanjpe/pspman.git](this)] repository
+  - Clone [this](https://github.com/pradyparanjpe/pspman.git) repository
   ```
   git clone https://github.com/pradyparanjpe/pspman.git
   ```
@@ -45,7 +45,7 @@
   ```
 
 # Uninstallation
-  Recursive (Use me to uninstall myself)
+   (Use me to uninstall myself)
   - Remove repository
   ```
   gitman -d pspman
@@ -57,7 +57,7 @@
   - If not needed anymore, remove the exported PATH addendum using a text editor
  
 # Update
-  Recursive (Use me to update myself)
+   (Use me to update myself)
   - Run a regular update
   ```
   gitman
@@ -65,7 +65,7 @@
   
 # Usage
   - CAUTION: This is a "*personal, simple*" package manager. Do NOT run it as ROOT
-  - Never supply root password or sudo keyword unless you really know what you are doing.
+  - Never supply root password or sudo prefix unless you really know what you are doing.
   - Check the usage help command
   ```
   gitman --help
