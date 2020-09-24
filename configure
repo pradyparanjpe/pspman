@@ -48,8 +48,10 @@ echo "prefix=${prefix}" >> Makefile
 prefix=
 echo "all:" >> Makefile
 echo "	@cp pspman/gitman \$(prefix)/bin" >> Makefile
+echo "	@mkdir -p ${HOME}/.local/share/man/man1" >> Makefile
+echo "	@cp pspman.1 ${HOME}/.local/share/man/man1/" >> Makefile
 echo "clean:" >> Makefile
 echo "	rm \$(prefix)/bin/gitman" >> Makefile
+echo "	rm ${HOME}/.local/share/man/man1/pspman.1" >> Makefile
 echo "install:" >> Makefile
 echo "	@true" >> Makefile
-
