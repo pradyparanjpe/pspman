@@ -20,7 +20,7 @@
 ## Windows
 Sorry
 ## Apple Mac
-This program might not work for you, since you didn't have to pay for it.
+This App might not work for you, since you didn't have to pay for it.
 ## Linux
    (Use me to install myself)
   - Create a user's bin directory [default: `${HOME}/bin`]
@@ -50,7 +50,7 @@ This program might not work for you, since you didn't have to pay for it.
   ```
   gitman -d pspman
   ```
-  - This leaves back the binary `${HOME}/bin/gitman` remove it
+  - This leaves back the binary `${HOME}/bin/gitman`. Remove it
   ```
   rm ${HOME}/bin/gitman
   ```
