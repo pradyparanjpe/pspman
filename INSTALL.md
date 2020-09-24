@@ -8,7 +8,6 @@ Sorry
 ## Apple Mac
 This App might not work for you, since you didn't have to pay for it.
 ## Linux
-   (Use me to install myself)
   - Create a user's bin directory [default: `${HOME}/bin`]
   ```
   mkdir -p ${HOME}/bin
@@ -25,20 +24,19 @@ This App might not work for you, since you didn't have to pay for it.
   ```
   git clone https://github.com/pradyparanjpe/pspman.git
   ```
-  - run gitman
+  - configure and make
   ```
-  ${HOME}/programs/pspman/pspman/gitman -c ${HOME}/programs
+  ./configure && make
   ```
 
 # UNINSTALL
-   (Use me to uninstall myself)
+  - Run "clean" on pspman
+  ```
+  cd ${HOME}/programs/pspman && make clean && cd ${HOME}/programs
+  ```
   - Remove repository
   ```
-  gitman -d pspman
-  ```
-  - This leaves back the binary `${HOME}/bin/gitman`. Remove it
-  ```
-  rm ${HOME}/bin/gitman
+  rm -rf pspman
   ```
   - If not needed anymore, remove the previously exported PATH addendum in `${HOME}/.bashrc` using a text editor
  
