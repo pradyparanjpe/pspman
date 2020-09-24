@@ -163,6 +163,8 @@ function permission_check() {
             printf "\b\b\b\b\b\b\b\b\b\b\b\b\b"
             printf " $((10 - time_out)) seconds..."
         done
+        printf "\b\b\b\b\b\b\b\b\b\b\b\b\b"
+        printf "10 seconds..."
         echo ""
         echo ""
         echo "[INFO] ¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯"
