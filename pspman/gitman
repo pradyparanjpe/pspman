@@ -22,28 +22,30 @@
 function init() {
     USE_MSG="
 Usage:
-$ gitman [-h] [-c CLONE] [-f] [-o] [-p PREF] [-u URI]
+$ gitman [-h] [-c DIR] [-p PREF] [-f] [-o] [[-i URL] [-i URL]...] [[-d PROJ] [-d PROJ]...]
 
 NOTICE: This is only intended for \"user\" installs.
 CAUTION: DO NOT RUN THIS SCRIPT AS ROOT
 CAUTION: If you still insist, I won't care.
 
 Optional arguments:
--c|--clonedir CLONE\tPath for all git clones [default:${HOME}/programs]
--o|--only_pull\t\tOnly pull, do not try to install
--f|--force-root\t\tForce working with root permissions [DANGEROUS]
+-c|--clonedir DIR\tPath for all git clones [default:${HOME}/programs]
 -p|--prefix PREF\tPath for installation [default:${HOME}]
--u|--uri URI\t\tURI to clone new project
+-f|--force-root\t\tForce working with root permissions [DANGEROUS]
+-o|--only_pull\t\tOnly pull, do not try to install
+-i|--install URL\tURL to clone new project
+-d|--delete PROJ\tDelete PROJ
 "
 
     CLONE_DIR=
     INSTALL=true
     PREFIX=
-    URI=
     USER_WD=
     FORCE_ROOT=
+    INSTALL_LIST=()
     PROJECT_LIST=()
     PULL_SUCCESS=()
+    DEL_PACK=()
 }
 
 function exitDoor() {
@@ -51,11 +53,12 @@ function exitDoor() {
     CLONE_DIR=
     INSTALL=
     PREFIX=
-    URI=
+    INSTALL_LIST=
     USER_WD=
     FORCE_ROOT=
     PROJECT_LIST=
     PULL_SUCCESS=
+    DEL_PACK=
     exit "$1"
 }
 
@@ -75,6 +78,11 @@ function argParse () {
                 CLONE_DIR=$1
                 shift
                 ;;
+            -d|--delete)
+                shift
+                DEL_PACK+=( $1 )
+                shift
+                ;;
             -o|--only_pull)
                 INSTALL=
                 shift
@@ -84,9 +92,9 @@ function argParse () {
                 PREFIX=$1
                 shift
                 ;;
-            -u|--uri)
+            -i|--install)
                 shift
-                URI=$1
+                INSTALL_LIST+=( $1 )
                 shift
                 ;;
             *)
@@ -102,6 +110,42 @@ function fill_defaults() {
     [[ -z "$USER_WD" ]] && USER_WD="$PWD"
     [[ -z "$CLONE_DIR" ]] && CLONE_DIR="${HOME}/programs"
     [[ -z "$PREFIX" ]] && PREFIX="${HOME}"
+}
+
+function perm_pass() {
+    permdir="$1"
+    perms=
+    perminfo=( $(stat -Lc "%U %G %a" "$permdir") )
+    owner=${perminfo[0]}
+    group=${perminfo[1]}
+    octperm=${perminfo[2]}
+    if (( ($octperm & 0007) != 0 )); then
+        # everyone has access
+        perms=true
+    elif (( ($octperm & 0070) !=0 )); then
+        # some group has permissions
+        user_groups=( $(groups $USER) )
+        for ug in $user_groups; do
+            if [[ $ug == $group ]]; then
+                perms=true
+                break
+            fi
+        done
+    elif (( ($octperm & 00700) !=0 )); then
+        # owner has permissions
+        if [[ $USER == $owner ]]; then
+            perms=true
+        fi
+    fi
+    if [[ -z $perms ]]; then
+        perms=
+        echo "[ERROR] We don't have read|write|execute permissions on $permdir"
+        echo "[SUGGEST] Try some other location"
+        echo "Bye"
+        exit 1
+    fi
+    perms=
+    permdir=
 }
 
 function permission_check() {
@@ -124,42 +168,12 @@ function permission_check() {
         perms=true
     # Is installation directory read/writable
     else
-        permdir=$CLONE_DIR;
-        while [[ ! -d "$permdir" ]];
-        do
-            permdir=$(dirname "$permdir")
+        clonedir=$CLONE_DIR;
+        while [[ ! -d "$clonedir" ]]; do
+            clonedir=$(dirname "$permdir")
         done
-        perms=
-        perminfo=( $(stat -Lc "%U %G %a" "$permdir") )
-        owner=${perminfo[0]}
-        group=${perminfo[1]}
-        octperm=${perminfo[2]}
-        if (( ($octperm & 0007) != 0 )); then
-            # everyone has access
-            perms=true
-        elif (( ($octperm & 0070) !=0 )); then
-            # some group has permissions
-            user_groups=( $(groups $USER) )
-            for ug in $user_groups; do
-                if [[ $ug == $group ]]; then
-                    perms=true
-                    break
-                fi
-            done
-        elif (( ($octperm & 00700) !=0 )); then
-            # owner has permissions
-            if [[ $USER == $owner ]]; then
-                perms=true
-            fi
-        fi
-        if [[ -z $perms ]]; then
-            perms=
-            echo "[ERROR] We don't have read|write|execute permissions on $permdir"
-            echo "[SUGGEST] Try some other location"
-            echo "Bye"
-            exit 1
-        fi
-        perms=
+        perm_pass "$clonedir"
+        perm_pass "$PREFIX"
     fi
 }
 
@@ -279,11 +293,11 @@ function auto_install () {
         echo "[INFO] make install"
         echo "[INFO] In following projects to install them"
         echo ""
-        echo ""
         for proj in ${makefile[@]}; do
             echo "[LIST] $proj"
             bootstrap_install "$proj" "make"
         done
+        echo ""
     fi
     if [[ -n $meson ]]; then
         echo ""
@@ -292,11 +306,11 @@ function auto_install () {
         echo "[INFO] meson/ninja"
         echo "[INFO] In following projects to install them"
         echo ""
-        echo ""
         for proj in ${meson[@]}; do
             echo "[LIST] $proj"
             bootstrap_install "$proj" "meson"
         done
+        echo ""
     fi
     if [[ -n $pysetup ]]; then
         echo ""
@@ -308,6 +322,7 @@ function auto_install () {
             echo "[LIST] $proj"
             bootstrap_install "$proj" "pysetup"
         done
+        echo ""
     fi
     if [[ -n $unknown ]]; then
         echo ""
@@ -318,6 +333,7 @@ function auto_install () {
         for proj in ${unknown[@]}; do
             echo "[LIST] $proj"
         done
+        echo ""
     fi
     makefile=
     meson=
@@ -327,15 +343,15 @@ function auto_install () {
 
 function new_install() {
     mkdir -p "$CLONE_DIR"
-    if [[ -n $URI ]]; then
-        if [[ "$URI" =~ ":" ]]; then
-            package=$(echo "$URI" \
+    for url in ${INSTALL_LIST[@]}; do
+        if [[ "$url" =~ ":" ]]; then
+            package=$(echo "$url" \
                           | rev \
                           | cut -d ":" -f 1 \
                           | rev \
                           | cut -d "." -f 1)
         else
-            package=$(echo "$URI" \
+            package=$(echo "$url" \
                           | rev \
                           | cut -d "/" -f 1 \
                           | rev \
@@ -360,7 +376,7 @@ function new_install() {
         fi
         cd "${CLONE_DIR}"
         mkdir "$package_dir"
-        git clone "$URI" "$package_dir"
+        git clone "$url" "$package_dir"
         cd "$package_dir"
         if [[ -f "./meson.build" ]]; then
             bootstrap_install $package_dir meson
@@ -379,9 +395,31 @@ function new_install() {
             fi
         fi
         cd "$USER_WD"
-    fi
+    done
     package=
     package_dir=
+    url=
+}
+
+function del_proj() {
+    for package in ${DEL_PACK[@]}; do
+        if [[ ! -d "${CLONE_DIR}/${package}" ]]; then
+            echo "[WARNING] ${package} not found in ${CLONE_DIR}"
+            echo "[WARNING] Ignoring..."
+        else
+            cd "${CLONE_DIR}/${package}"
+            fetch_source=$(git remote -v |grep "fetch" | cut -d " " -f 1 | cut -f 2)
+            echo "[INFO] Deleting ${PWD}"
+            echo "[INFO] I can't guess which files were installed."
+            echo "[INFO] So, leaving those scars behind..."
+            echo "[INFO] This project may be added again from the following path"
+            echo "[INFO] ${fetch_source}"
+            cd "${CLONE_DIR}"
+            rm -rf "${CLONE_DIR}/${package}"
+            fetch_source=
+        fi
+    done
+    package=
 }
 
 function main() {
@@ -389,6 +427,7 @@ function main() {
     argParse "$@"
     fill_defaults
     permission_check
+    del_proj
     find_gits
     git_pulls
     auto_install
