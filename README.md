@@ -31,9 +31,9 @@ This program might not work for you, since you didn't have to pay for it.
   ```
   echo "export PATH=\"\${PATH}:${HOME}/bin\"" >> ${HOME}/.bashrc
   ```
-  - Create a programs directory [default: `${HOME}/programs`]
+  - Create a "programs" directory [default: `${HOME}/programs`]
   ```
-  mkdir ${HOME}/programs && cd ${HOME}/programs
+  mkdir -p ${HOME}/programs && cd ${HOME}/programs
   ```
   - Clone [this](https://github.com/pradyparanjpe/pspman.git) repository
   ```
@@ -52,15 +52,15 @@ This program might not work for you, since you didn't have to pay for it.
   ```
   - This leaves back the binary `${HOME}/bin/gitman` remove it
   ```
-  rm bin/gitman
+  rm ${HOME}/bin/gitman
   ```
-  - If not needed anymore, remove the exported PATH addendum using a text editor
+  - If not needed anymore, remove the previously exported PATH addendum in `${HOME}/.bashrc` using a text editor
  
 # Update
    (Use me to update myself)
-  - Run a regular update
+  - Run a regular update on the folder in which pspman is cloned
   ```
-  gitman
+  gitman -c ${HOME}/programs
   ```
   
 # Usage

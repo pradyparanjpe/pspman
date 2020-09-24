@@ -35,6 +35,11 @@ Optional arguments:
 -o|--only_pull\t\tOnly pull, do not try to install
 -i|--install URL\tURL to clone new project
 -d|--delete PROJ\tDelete PROJ
+
+Order of operations:
+Delete all PROJ...
+Update all github projects in DIR
+install all URL...
 "
 
     CLONE_DIR=
