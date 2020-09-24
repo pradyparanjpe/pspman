@@ -164,6 +164,9 @@ function permission_check() {
             printf " $((10 - time_out)) seconds..."
         done
         echo ""
+        echo ""
+        echo "[INFO] ¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯"
+        echo ""
         echo "[INFO] Proceeding..."
         perms=true
     # Is installation directory read/writable
@@ -294,7 +297,7 @@ function auto_install () {
         echo "[INFO] In following projects to install them"
         echo ""
         for proj in ${makefile[@]}; do
-            echo "[LIST] $proj"
+            echo "    [LIST] $proj"
             bootstrap_install "$proj" "make"
         done
         echo ""
@@ -307,7 +310,7 @@ function auto_install () {
         echo "[INFO] In following projects to install them"
         echo ""
         for proj in ${meson[@]}; do
-            echo "[LIST] $proj"
+            echo "    [LIST] $proj"
             bootstrap_install "$proj" "meson"
         done
         echo ""
@@ -319,7 +322,7 @@ function auto_install () {
         echo "[INFO] In following projects to install them"
         echo "[INFO] "
         for proj in ${pysetup[@]}; do
-            echo "[LIST] $proj"
+            echo "    [LIST] $proj"
             bootstrap_install "$proj" "pysetup"
         done
         echo ""
@@ -331,7 +334,7 @@ function auto_install () {
         echo "[INFO] Couldn't be guessed"
         echo ""
         for proj in ${unknown[@]}; do
-            echo "[LIST] $proj"
+            echo "    [LIST] $proj"
         done
         echo ""
     fi
