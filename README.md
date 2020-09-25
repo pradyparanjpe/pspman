@@ -96,7 +96,7 @@ HOME directory of user. Used as default `prefix` and parent for default clone di
 May mess up root file system. Do not use as root.
 
 # COPYRIGHT
-pspman is Copyright (C) 2020 Pradyumna Paranjape https://github.com/pradyparanjpe/
+pspman is Copyright (C) 2020 Pradyumna Paranjape <https://github.com/pradyparanjpe/>
 
 # SEE ALSO
 git(1)
