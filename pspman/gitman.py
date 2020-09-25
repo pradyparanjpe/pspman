@@ -239,23 +239,23 @@ def del_proj(env: InstallEnv) -> None:
     for package in env.pkg_delete:
         pkg_path = Path.joinpath(env.clonedir, package)
         if not isdir(pkg_path):
-            print_info(f"{package} not found in {env.clonedir}", 3)
+            print_info(f"Couldn't find {package} in {env.clonedir}", 3)
             print_info("Ignoring...", 0)
             continue
         chdir(pkg_path)
-        call = Popen("git", "remote", "-v")
+        call = Popen(["git", "remote", "-v"],
+                     stdout=PIPE, stderr=PIPE, text=True)
         stdout, stderr = call.communicate()
         if stderr:
             return False
-        fetch_source = recompile("^.*fetch.*").findall(
-            stdout.split
-        )[0].split(" ")[-2]
+        fetch_source = recompile(r"^.*fetch.*").findall(
+            stdout)[0].split(" ")[-2].split("\t")[-1]
         print_info(f"Deleting {pkg_path}", 1)
         print_info("I can't guess which files were installed.", 1)
         print_info("So, leaving those scars behind...", 0)
         print_info("This project may be added again from the following path",
                    0)
-        print_info(f"${fetch_source}", 0)
+        print_info(f"{fetch_source}", 0)
         chdir(env.clonedir)
         rmtree(Path.joinpath(env.clonedir, package))
 
