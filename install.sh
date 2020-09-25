@@ -67,7 +67,6 @@ function restore_path() {
 function del_pspman() {
     pip uninstall -y pspman
     pip uninstall -y colorama
-    rm -rf "${HOME}/.pspman"
 }
 
 function uninstall() {
