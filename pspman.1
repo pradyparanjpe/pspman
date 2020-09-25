@@ -6,15 +6,16 @@
 .PP
 \f[B]P\f[R]ersonal \f[B]S\f[R]imple \f[B]P\f[R]ackage \f[B]Man\f[R]ager
 (pspman) - a package manager aid
+.PP
+\f[B]P\f[R]ythonic \f[B]S\f[R]mall \f[B]Package\f[R] \f[B]Man\f[R]ager
+(pspman) - a package manager aid
 .SH SYNOPSIS
 .PP
-gitman -h
+pspman -h
 .PP
-gitman [ -c DIR ] [ -p PREF ] [-f] [-o] [[-i URL] [-i URL]\&...] [[-d
+pspman [ -c DIR ] [ -p PREF ] [-f] [-o] [[-i URL] [-i URL]\&...] [[-d
 PROJ] [-d PROJ]\&...]
 .SH DESCRIPTION
-.PP
-The executable is \[lq]\f[C]gitman\f[R]\[rq]
 .SS Application:
 .IP \[bu] 2
 Clone and install git projects.
@@ -26,7 +27,7 @@ Try to install git projects using.
 .IP \[bu] 2
 \f[C]configure\f[R], \f[C]make\f[R], \f[C]make install\f[R].
 .IP \[bu] 2
-\f[C]pip --user install\f[R] .
+\f[C]pip --user -U install .\f[R] .
 .IP \[bu] 2
 meson/ninja.
 .RE
@@ -42,14 +43,13 @@ Delete all PROJs
 .IP "2." 3
 Update all github projects in DIR
 .IP "3." 3
-install all URLs
+Install all URLs
 .SS CAUTION
 .PP
 This is a \[lq]\f[I]personal, simple\f[R]\[rq] package manager.
 Do NOT run it as ROOT.
 Never supply root password or sudo prefix unless you really know what
 you are doing.
-Check the usage help command.
 .SS Recommendation
 .PP
 Create multiple Clone Directories (argument \f[C]-c\f[R]) as package
@@ -84,28 +84,28 @@ Delete PROJ
 .IP
 .nf
 \f[C]
-$ gitman -h
+$ pspman -h
 \f[R]
 .fi
 .SS Update default locations
 .IP
 .nf
 \f[C]
-$ gitman
+$ pspman
 \f[R]
 .fi
 .SS Clone and install \f[C]git\[at]gitolite.local:foo.git\f[R]
 .IP
 .nf
 \f[C]
-$ gitman -i git\[at]gitolite.local:foo.git
+$ pspman -i git\[at]gitolite.local/foo.git
 \f[R]
 .fi
 .SS delete package \f[C]foo\f[R] located in directory \f[C]bar\f[R]
 .IP
 .nf
 \f[C]
-$ gitman -d foo -c bar
+$ pspman -d foo -c bar
 \f[R]
 .fi
 .SH ENVIRONMENT

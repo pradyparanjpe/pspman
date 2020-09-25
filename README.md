@@ -5,23 +5,21 @@
 # NAME
   **P**ersonal **S**imple **P**ackage **Man**ager (pspman) - a package manager aid
 
-# SYNOPSIS
-  gitman -h
+  **P**ythonic **S**mall **Package** **Man**ager (pspman) - a package manager aid
 
-  gitman [ -c DIR ] [ -p PREF ] [-f] [-o] [[-i URL] [-i URL]...] [[-d PROJ] [-d PROJ]...]
+# SYNOPSIS
+  pspman -h
+
+  pspman [ -c DIR ] [ -p PREF ] [-f] [-o] [[-i URL] [-i URL]...] [[-d PROJ] [-d PROJ]...]
 
 # DESCRIPTION
-  The executable is "`gitman`"
-
 ## Application:
   - Clone and install git projects.
   - Update existing git projects.
   - Try to install git projects using.
-
     - `configure`, `make`, `make install`.
-    - `pip --user install` .
+    - `pip --user -U install .` .
     - meson/ninja.
-
   - Delete cloned directories [but not installation files]
 
 ## Information
@@ -31,13 +29,12 @@
 ## Order of Operation
   1. Delete all PROJs
   2. Update all github projects in DIR
-  3. install all URLs
+  3. Install all URLs
 
 
 ## CAUTION
 This is a "*personal, simple*" package manager. Do NOT run it as ROOT.
 Never supply root password or sudo prefix unless you really know what you are doing.
-Check the usage help command.
 
 ## Recommendation
 Create multiple Clone Directories (argument `-c`) as package groups that update together.
@@ -70,22 +67,22 @@ Delete PROJ
 # EXAMPLES
 ##  Show help
 ```
-$ gitman -h
+$ pspman -h
 ```
 
 ##  Update default locations
 ```
-$ gitman
+$ pspman
 ```
   
 ##  Clone and install `git@gitolite.local:foo.git`
 ```
-$ gitman -i git@gitolite.local:foo.git
+$ pspman -i git@gitolite.local/foo.git
 ```
   
 ##  delete package `foo` located in directory `bar`
 ```
-$ gitman -d foo -c bar
+$ pspman -d foo -c bar
 ```
 
 # ENVIRONMENT

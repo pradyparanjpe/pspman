@@ -23,6 +23,8 @@ setup script
 
 
 from setuptools import setup
+from setuptools.command.develop import develop
+from setuptools.command.install import install
 
 
 try:
@@ -30,6 +32,42 @@ try:
         LONG_DESCRIPTION = README_FILE.read()
 except FileNotFoundError:
     LONG_DESCRIPTION = ""
+
+
+def mandb() -> None:
+    '''
+    copy man.db to ${HOME}/.local/share/man/man1/.
+    '''
+    from os import name as osname
+    if osname.lower() != "posix":
+        return
+    from os import environ, makedirs
+    from shutil import copy
+    from pathlib import Path
+    man_dest = Path(environ["HOME"], '.local', 'share', 'man', 'man1')
+    makedirs(man_dest, exist_ok=True)
+    copy("pspman.1", man_dest)
+    return
+
+
+class PostDevelopCommand(install):
+    """Post-installation for installation mode."""
+    def run(self) -> None:
+        '''
+        run post install
+        '''
+        develop.run(self)
+        mandb()
+
+
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self) -> None:
+        '''
+        run post install
+        '''
+        install.run(self)
+        mandb()
 
 
 setup(
@@ -45,6 +83,9 @@ setup(
     packages=['pspman'],
     install_requires=['colorama'],
     scripts=['bin/pspman', ],
-    package_data={
-    },
+    package_data={},
+    cmdclass={
+        'develop': PostDevelopCommand,
+        'install': PostInstallCommand
+    }
 )
