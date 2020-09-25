@@ -5,7 +5,7 @@
 # NAME
   **P**ersonal **S**imple **P**ackage **Man**ager (pspman) - a package manager aid
 
-  **P**ythonic **S**mall **Package** **Man**ager (pspman) - a package manager aid
+  **P**ythonic **S**mall **P**ackage **Man**ager (pspman) - a package manager aid
 
 # SYNOPSIS
   pspman -h

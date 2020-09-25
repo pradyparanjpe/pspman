@@ -210,7 +210,7 @@ def new_install(env: InstallEnv) -> None:
     for url in env.pkg_install:
         if url[-1] != "/":
             url += "/"
-        package = node_pat.findall(url)[-1].replace(".git", "")
+        package = node_pat.findall(url)[-1].replace(".git", "").split(":")[-1]
         package_dir = Path.joinpath(env.clonedir, package)
         if isdir(package_dir):
             print_info(f"{package} appears to be installed already", 3)

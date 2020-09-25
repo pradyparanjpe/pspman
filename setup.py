@@ -27,11 +27,14 @@ from setuptools.command.develop import develop
 from setuptools.command.install import install
 
 
-try:
-    with open("./LongDescription", 'r') as README_FILE:
-        LONG_DESCRIPTION = README_FILE.read()
-except FileNotFoundError:
-    LONG_DESCRIPTION = ""
+LONG_DESCRIPTION = ""
+for read_file in ("./LongDescription", "./README.md"):
+    try:
+        with open(read_file, 'r') as README_FILE:
+            LONG_DESCRIPTION = README_FILE.read()
+            break
+    except FileNotFoundError:
+        continue
 
 
 def mandb() -> None:

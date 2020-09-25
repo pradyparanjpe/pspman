@@ -61,22 +61,22 @@ def cli() -> Namespace:
     '''
     description = '''
     NOTICE: This is only intended for \"user\" installs.
-    CAUTION: DO NOT RUN THIS SCRIPT AS ROOT
+    CAUTION: DO NOT RUN THIS SCRIPT AS ROOT.
     CAUTION: If you still insist, I won't care.
     '''
     homedir = environ["HOME"]
     parser = ArgumentParser(description=description,
                             formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-f', '--force-root', action='store_true',
-                        help='Force working with root permissions [DANGEROUS]')
+                        help='force working with root permissions [DANGEROUS]')
     parser.add_argument('-o', '--only-pull', action='store_true',
-                        help='Only pull, do not try to install')
+                        help='only pull, do not try to install')
     parser.add_argument('-c', '--clone-dir', type=str, nargs="?",
                         default=f'{homedir}/programs',
-                        help='Path for all git clones')
+                        help='path for all git clones')
     parser.add_argument('-p', '--prefix', type=str, nargs="?",
                         default=f'{homedir}',
-                        help='Path for installation')
+                        help='path for installation')
     parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
                         nargs="*", help='URL to clone new project')
     parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
