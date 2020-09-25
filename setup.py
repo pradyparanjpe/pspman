@@ -80,7 +80,7 @@ class PostInstallCommand(install):
 
 setup(
     name='pspman',
-    version='0.0.0.0dev1',
+    version='0.0.0.0dev2',
     description="Personal Simple Package Manager",
     license="GPLv3",
     long_description=LONG_DESCRIPTION,
