@@ -58,10 +58,10 @@ class InstallEnv():
         '''
         self.clonedir = Path(clonedir)
         self.prefix = Path(prefix)
-        if not clonedir.exists():
-            makedirs(clonedir, exist_ok=True)
-        if not prefix.exists():
-            makedirs(prefix, exist_ok=True)
+        if not self.clonedir.exists():
+            makedirs(self.clonedir, exist_ok=True)
+        if not self.prefix.exists():
+            makedirs(self.prefix, exist_ok=True)
         self.only_pull = kwargs["only_pull"]
         self.force_root = kwargs["force_root"]
         self.pkg_install = list(kwargs.get("pkg_install", ""))
