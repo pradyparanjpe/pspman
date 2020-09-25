@@ -30,13 +30,9 @@ function add_to_path() {
                 >> "${HOME}/.bashrc"
     source "${HOME}/.bashrc"
     mkdir -p "${HOME}/.pspman"
-    mkdir -p "${HOME}/.pspman/bin"
-    mkdir -p "${HOME}/.pspman/share"
-    mkdir -p "${HOME}/.pspman/lib"
-    mkdir -p "${HOME}/.pspman/lib64"
-    mkdir -p "${HOME}/.pspman/include"
-    mkdir -p "${HOME}/.pspman/etc"
-    mkdir -p "${HOME}/.pspman/tmp"
+    for workdir in bin share lib lib64 include etc tmp programs; do
+        mkdir -p "${HOME}/.pspman/${workdir}"
+    done
 }
 
 function get_pip() {

@@ -22,7 +22,7 @@ Environment Classes
 '''
 
 
-from os import environ, listdir, getcwd
+from os import environ, listdir, getcwd, makedirs
 from os.path import isdir
 from sys import exit as sysexit
 from time import sleep
@@ -58,6 +58,10 @@ class InstallEnv():
         '''
         self.clonedir = Path(clonedir)
         self.prefix = Path(prefix)
+        if not clonedir.exists():
+            makedirs(clonedir, exist_ok=True)
+        if not prefix.exists():
+            makedirs(prefix, exist_ok=True)
         self.only_pull = kwargs["only_pull"]
         self.force_root = kwargs["force_root"]
         self.pkg_install = list(kwargs.get("pkg_install", ""))
@@ -128,8 +132,8 @@ class InstallEnv():
                          stderr=PIPE, stdout=PIPE, text=True)
             stdout, stderr = call.communicate()
             user_groups = stdout.split(" ")
-            for ug in user_groups:
-                if ug == group:
+            for u_grp in user_groups:
+                if u_grp == group:
                     return True
         if (octperm[-3] == "7") != 0:
             # owner has permissions
