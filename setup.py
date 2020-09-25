@@ -50,6 +50,10 @@ def mandb() -> None:
     man_dest = Path(environ["HOME"], '.local', 'share', 'man', 'man1')
     makedirs(man_dest, exist_ok=True)
     copy("pspman.1", man_dest)
+    myhome = Path(environ["HOME"], ".pspman")
+    makedirs(myhome, exist_ok=True)
+    for workdir in ("bin", "share", "lib", "lib64", "etc", "include", "tmp"):
+        makedirs(myhome.joinpath(workdir), exist_ok=True)
     return
 
 

@@ -22,7 +22,7 @@ input/outputs
 '''
 
 
-from os import getcwd, environ
+from os import environ
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
 from colorama import Fore, Style
 
@@ -72,10 +72,10 @@ def cli() -> Namespace:
     parser.add_argument('-o', '--only-pull', action='store_true',
                         help='only pull, do not try to install')
     parser.add_argument('-c', '--clone-dir', type=str, nargs="?",
-                        default=f'{homedir}/programs',
+                        default=f'{homedir}/.pspman/programs',
                         help='path for all git clones')
     parser.add_argument('-p', '--prefix', type=str, nargs="?",
-                        default=f'{homedir}',
+                        default=f'{homedir}/.pspman',
                         help='path for installation')
     parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
                         nargs="*", help='URL to clone new project')

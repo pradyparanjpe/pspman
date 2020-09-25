@@ -23,8 +23,8 @@ Personal Simple Python-based package manager that clones git
 
 
 from os import getcwd, chdir, makedirs
-from shutil import rmtree
 from os.path import isdir, isfile
+from shutil import rmtree
 from sys import exit as sysexit
 from subprocess import Popen, PIPE
 from pathlib import Path
@@ -98,7 +98,7 @@ def specific_pip(_) -> int:
     specific python setup
     return: failure: 1; success: 0
     '''
-    call = Popen(["pip", "install", "--user", "-U", "."],
+    call = Popen(["python", "-m", "pip", "install", "--user", "-U", "."],
                  stdout=PIPE, stderr=PIPE, text=True)
     stdout, stderr = call.communicate()
     if stderr:

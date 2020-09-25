@@ -86,11 +86,11 @@ $ pspman -d foo -c bar
 ```
 
 # ENVIRONMENT
-## HOME
-HOME directory of user. Used as default `prefix` and parent for default clone directory `${HOME}/programs`
+## ${HOME}/.pspman
+Used as default `prefix` and parent for default clone directory `programs`
   
 # BUGS
-May mess up root file system. Do not use as root.
+May mess up root file system. Do not use as ROOT.
 
 # COPYRIGHT
 pspman is Copyright (C) 2020 Pradyumna Paranjape <https://github.com/pradyparanjpe/>
