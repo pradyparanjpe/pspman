@@ -223,15 +223,15 @@ def new_install(env: InstallEnv) -> None:
                 print_info("This is too much to handle...", 4)
                 continue
             print_info(f"Calling this project '{package_dir}'", 3)
-        print_info(f"Installing in {package_dir}", 1)
-        chdir(env.clonedir)
-        makedirs(package_dir, exist_ok=False)
-        call = Popen(["git", "clone", url, str(package_dir)],
-                     stdout=PIPE, stderr=PIPE, text=True)
-        stdout, stderr = call.communicate()
-        clone_paths_list.append(package_dir)
-        if stderr:
-            return False
+            print_info(f"Installing in {package_dir}", 1)
+            chdir(env.clonedir)
+            makedirs(package_dir, exist_ok=False)
+            call = Popen(["git", "clone", url, str(package_dir)],
+                         stdout=PIPE, stderr=PIPE, text=True)
+            stdout, stderr = call.communicate()
+            clone_paths_list.append(package_dir)
+            if stderr:
+                return False
     auto_install(clone_paths_list, env)
 
 
