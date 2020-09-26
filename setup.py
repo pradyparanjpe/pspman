@@ -22,6 +22,10 @@ setup script
 '''
 
 
+from os import environ, makedirs
+from os import sep as ossep
+from shutil import copy
+from pathlib import Path
 from setuptools import setup
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -41,12 +45,6 @@ def mandb() -> None:
     '''
     copy man.db to ${HOME}/.local/share/man/man1/.
     '''
-    from os import name as osname
-    if osname.lower() != "posix":
-        return
-    from os import environ, makedirs
-    from shutil import copy
-    from pathlib import Path
     man_dest = Path(environ["HOME"], '.local', 'share', 'man', 'man1')
     makedirs(man_dest, exist_ok=True)
     copy("pspman.1", man_dest)
@@ -55,7 +53,9 @@ def mandb() -> None:
     for workdir in ("bin", "share", "lib", "lib64",
                     "etc", "include", "tmp", "programs"):
         makedirs(myhome.joinpath(workdir), exist_ok=True)
-    return
+    if "pspman" not in environ["PATH"]:
+        with open(environ["HOME"] + ossep + ".bashrc", "a") as bash_f_h:
+            print(file=bash_f_h, 'export PATH="${PATH}:${HOME}/.pspman/bin"')
 
 
 class PostDevelopCommand(install):
@@ -80,7 +80,7 @@ class PostInstallCommand(install):
 
 setup(
     name='pspman',
-    version='0.0.0.0dev0',
+    version='0.0.0.0.dev3',
     description="Personal Simple Package Manager",
     license="GPLv3",
     long_description=LONG_DESCRIPTION,

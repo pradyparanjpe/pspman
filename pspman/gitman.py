@@ -214,7 +214,8 @@ def new_install(env: InstallEnv) -> None:
         package_dir = Path.joinpath(env.clonedir, package)
         if isdir(package_dir):
             print_info(f"{package} appears to be installed already", 3)
-        elif isfile(package_dir):
+            return False
+        if isfile(package_dir):
             print_info(f"A file named '{package_dir}' already exists", 3)
             package_dir = package_dir.joinpath(".d")
             if package_dir.exists():
@@ -224,14 +225,14 @@ def new_install(env: InstallEnv) -> None:
                 continue
             print_info(f"Calling this project '{package_dir}'", 3)
             print_info(f"Installing in {package_dir}", 1)
-            chdir(env.clonedir)
-            makedirs(package_dir, exist_ok=False)
-            call = Popen(["git", "clone", url, str(package_dir)],
-                         stdout=PIPE, stderr=PIPE, text=True)
-            stdout, stderr = call.communicate()
-            clone_paths_list.append(package_dir)
-            if stderr:
-                return False
+        chdir(env.clonedir)
+        makedirs(package_dir, exist_ok=False)
+        call = Popen(["git", "clone", url, str(package_dir)],
+                     stdout=PIPE, stderr=PIPE, text=True)
+        stdout, stderr = call.communicate()
+        clone_paths_list.append(package_dir)
+        if stderr:
+            return False
     auto_install(clone_paths_list, env)
 
 
