@@ -111,7 +111,7 @@ def specific_meson(env: InstallEnv) -> int:
     '''
     update_dir = "./build/update"
     makedirs(f'{getcwd}/subprojects', exist_ok=True)
-    call = Popen(["gitman", "-c", f"{getcwd()}/subprojects"],
+    call = Popen(["pspman", "-c", f"{getcwd()}/subprojects"],
                  stdout=PIPE, stderr=PIPE, text=True)
     stdout, stderr = call.communicate()
     makedirs(update_dir, exist_ok=True)
