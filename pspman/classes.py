@@ -56,18 +56,25 @@ class InstallEnv():
         pkg_delete: List of new packages to delete
 
         '''
+        # options
         self.clonedir = Path(clonedir)
         self.prefix = Path(prefix)
         if not self.clonedir.exists():
             makedirs(self.clonedir, exist_ok=True)
         if not self.prefix.exists():
             makedirs(self.prefix, exist_ok=True)
-        self.only_pull = kwargs["only_pull"]
-        self.force_root = kwargs["force_root"]
         self.pkg_install = list(kwargs.get("pkg_install", ""))
         self.pkg_delete = list(kwargs.get("pkg_delete", ""))
-        self.base_dir = getcwd()
+        self.opt_flags = {"only_pull": False,
+                          "force_root": False,
+                          "stale": False}
+        for key, val in kwargs.items():
+            if key in self.opt_flags.keys():
+                self.opt_flags[key] = val
+
+        # inits
         self.git_project_paths = []
+        self.base_dir = getcwd()
         self.permission_check()
 
     def find_gits(self) -> list:
@@ -91,7 +98,7 @@ class InstallEnv():
         # Am I root?
         if environ["USER"].lower() == "root":
             print_info("I hate dictators", 3)
-            if not self.force_root:
+            if not self.opt_flags['force_root']:
                 print_info("Bye", 0)
                 sysexit(2)
             print_info("I can only hope you know what you are doing...", 3)

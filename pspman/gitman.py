@@ -37,8 +37,11 @@ def git_pulls(env: InstallEnv) -> list:
     '''
     Pull git projects
     '''
-    fails = 0
     pull_paths = []
+    fails = 0
+    if env.opt_flags['stale']:
+        print_info("But not trying to update them.", 1)
+        return pull_paths
     for git_path in env.git_project_paths:
         chdir(git_path)
         call = Popen(["git", "pull"],
@@ -110,7 +113,7 @@ def specific_meson(env: InstallEnv) -> int:
     ''' specific meson/ninja return: failure: 1; success: 0
     '''
     update_dir = "./build/update"
-    makedirs(f'{getcwd}/subprojects', exist_ok=True)
+    makedirs(f'{getcwd()}/subprojects', exist_ok=True)
     call = Popen(["pspman", "-c", f"{getcwd()}/subprojects"],
                  stdout=PIPE, stderr=PIPE, text=True)
     stdout, stderr = call.communicate()
@@ -164,7 +167,6 @@ def install_wrap(env: InstallEnv, projects_list: list,
     for proj in projects_list:
         print_info(proj, 5)
         chdir(proj)
-        # TODO: UPDATE Flag if already present
         print_info(f"cd {getcwd()}", 1)
         err = [specific_unknown, specific_make,
                specific_pip, specific_meson][install_type](env)
@@ -176,6 +178,8 @@ def install_wrap(env: InstallEnv, projects_list: list,
 
 
 def auto_install(git_paths: list, env: InstallEnv) -> None:
+    if env.opt_flags['only_pull']:
+        return
     unknown_installs = []
     make_projects = []
     meson_projects = []
@@ -201,6 +205,7 @@ def auto_install(git_paths: list, env: InstallEnv) -> None:
         if proj_protocol:
             install_wrap(env=env, projects_list=proj_protocol,
                          install_type=len(protocols) - index - 1)
+    return
 
 
 def new_install(env: InstallEnv) -> None:
@@ -231,8 +236,6 @@ def new_install(env: InstallEnv) -> None:
                      stdout=PIPE, stderr=PIPE, text=True)
         stdout, stderr = call.communicate()
         clone_paths_list.append(package_dir)
-        if stderr:
-            return False
     auto_install(clone_paths_list, env)
 
 
@@ -266,16 +269,17 @@ def main() -> None:
     pkg_grp = InstallEnv(
         clonedir=args.clone_dir,
         prefix=args.prefix,
-        only_pull=args.only_pull,
-        force_root=args.force_root,
         pkg_install=args.pkg_install or "",
         pkg_delete=args.pkg_delete or "",
+        stale=args.stale or False,
+        force_root=args.force_root,
+        only_pull=args.only_pull,
     )
     del_proj(env=pkg_grp)
     pkg_grp.find_gits()
     updates = git_pulls(env=pkg_grp)
     auto_install(updates, pkg_grp)
-    new_install(pkg_grp)
+    new_install(env=pkg_grp)
     chdir(pkg_grp.base_dir)
     print_info("done.", 1)
     sysexit(0)
