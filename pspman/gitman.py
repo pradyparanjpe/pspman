@@ -45,7 +45,7 @@ def git_pulls(env: InstallEnv) -> list:
         return pull_paths
     for git_path in env.git_project_paths:
         chdir(git_path)
-        call = Popen(["git", "pull"],
+        call = Popen(["git", "pull", "--recurse-submodules"],
                      stderr=PIPE, stdout=PIPE, text=True)
         stdout, stderr = call.communicate()
         if "Already up to date" not in stdout:
@@ -233,7 +233,7 @@ def new_install(env: InstallEnv) -> None:
             print(f"Installing in {package_dir}", 1)
         chdir(env.clonedir)
         makedirs(package_dir, exist_ok=False)
-        call = Popen(["git", "clone", url, str(package_dir)],
+        call = Popen(["git", "clone", '--recursive', url, str(package_dir)],
                      stdout=PIPE, stderr=PIPE, text=True)
         stdout, stderr = call.communicate()
         clone_paths_list.append(package_dir)
