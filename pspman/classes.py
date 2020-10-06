@@ -102,6 +102,11 @@ class InstallEnv():
         else:
             self.db = DirDB(clonedir=self.clonedir, prefix=self.prefix)
 
+    def write_db(self, db_file:Path) -> None:
+        '''
+        update information about software installed in "this" clonedir
+        '''
+
     def find_gits(self) -> list:
         '''
         locate git projects
