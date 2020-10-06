@@ -29,7 +29,7 @@ from time import sleep
 from subprocess import Popen, PIPE
 from pathlib import Path
 import pickle as pkl
-from .input_output import print_info
+from psprint import psprint as print
 
 
 def timeout(wait: int = 10) -> None:
@@ -90,7 +90,7 @@ class InstallEnv():
         self.git_project_paths = []
         self.base_dir = getcwd()
         self.permission_check()
-        self.db = self.read(self.clonedir.joinpath(".psp_man_db"))
+        self.db = self.read_db(self.clonedir.joinpath(".psp_man_db"))
 
     def read_db(self, db_file: Path) -> None:
         '''
@@ -114,7 +114,7 @@ class InstallEnv():
                         Path.joinpath(self.clonedir, leaf)
                     )
                     count += 1
-        print_info(f"{count} project(s) found in {str(self.clonedir)}", 1)
+        print(f"{count} project(s) found in {str(self.clonedir)}", 1)
 
     def permission_check(self) -> None:
         '''
@@ -122,17 +122,17 @@ class InstallEnv():
         '''
         # Am I root?
         if environ["USER"].lower() == "root":
-            print_info("I hate dictators", 3)
+            print("I hate dictators", 3)
             if not self.opt_flags['force_root']:
-                print_info("Bye", 0)
+                print("Bye", 0)
                 sysexit(2)
-            print_info("I can only hope you know what you are doing...", 3)
-            print_info("Here is a chance to kill me in", 2)
+            print("I can only hope you know what you are doing...", 3)
+            print("Here is a chance to kill me in", 2)
             timeout(10)
-            print_info("", 0)
-            print_info("¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯", 3)
-            print_info("", 0)
-            print_info("[INFO] Proceeding...", 1)
+            print("", 0)
+            print("¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯", 3)
+            print("", 0)
+            print("[INFO] Proceeding...", 1)
         else:
             # Is installation directory read/writable
             parentdir = Path(self.clonedir)
@@ -151,8 +151,8 @@ class InstallEnv():
                      stderr=PIPE, stdout=PIPE, text=True)
         stdout, stderr = call.communicate()
         if stderr:
-            print_info(f"{stderr}", 4)
-            print_info("aborting...", 4)
+            print(f"{stderr}", 4)
+            print("aborting...", 4)
             sysexit()
         owner, group, octperm = stdout.replace("\n", "").split(" ")
         if (octperm[-1] == "7") != 0:
@@ -171,8 +171,8 @@ class InstallEnv():
             # owner has permissions
             if environ["USER"] == owner:
                 return True
-        print_info("We do not have sufficient permissions", 4)
-        print_info("Try another location", 2)
-        print_info("Bye", 0)
+        print("We do not have sufficient permissions", 4)
+        print("Try another location", 2)
+        print("Bye", 0)
         sysexit(1)
         return False
