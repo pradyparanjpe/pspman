@@ -26,7 +26,7 @@ from os import environ, makedirs
 from os import sep as ossep
 from shutil import copy
 from pathlib import Path
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 
@@ -88,7 +88,7 @@ setup(
     author='Pradyumna Paranjape',
     author_email='pradyparanjpe@rediffmail.com',
     url="https://github.com/pradyparanjpe",
-    packages=['pspman'],
+    packages=find_packages(),
     install_requires=['psprint'],
     scripts=['bin/pspman', ],
     package_data={},
