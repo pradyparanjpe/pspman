@@ -38,9 +38,9 @@ def timeout(wait: int = 10) -> None:
     '''
     for time_out in range(wait):
         sleep(1)
-        print(f"{wait - time_out:2.0f} seconds...", end="", flush=True)
-        print("\b" * 13, end="", flush=True)
-    print(f"{wait:2.0f} seconds...", flush=True)
+        print(f"{wait - time_out:2.0f} seconds...", end="", flush=True, pad=True)
+        print("\b" * 13, end="", flush=True, pad=True)
+    print(f"{wait:2.0f} seconds...", flush=True, pad=True)
 
 
 class DirDB():
@@ -114,7 +114,7 @@ class InstallEnv():
                         Path.joinpath(self.clonedir, leaf)
                     )
                     count += 1
-        print(f"{count} project(s) found in {str(self.clonedir)}", 1)
+        print(f"{count} project(s) found in {str(self.clonedir)}", 1, pad=True)
 
     def permission_check(self) -> None:
         '''
@@ -122,17 +122,17 @@ class InstallEnv():
         '''
         # Am I root?
         if environ["USER"].lower() == "root":
-            print("I hate dictators", 3)
+            print("I hate dictators", 3, pad=True)
             if not self.opt_flags['force_root']:
-                print("Bye", 0)
+                print("Bye", 0, pad=True)
                 sysexit(2)
-            print("I can only hope you know what you are doing...", 3)
-            print("Here is a chance to kill me in", 2)
+            print("I can only hope you know what you are doing...", 3, pad=True)
+            print("Here is a chance to kill me in", 2, pad=True)
             timeout(10)
-            print("", 0)
-            print("¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯", 3)
-            print("", 0)
-            print("[INFO] Proceeding...", 1)
+            print("", 0, pad=True)
+            print("¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯", 3, pad=True)
+            print("", 0, pad=True)
+            print("[INFO] Proceeding...", 1, pad=True)
         else:
             # Is installation directory read/writable
             parentdir = Path(self.clonedir)
@@ -151,8 +151,8 @@ class InstallEnv():
                      stderr=PIPE, stdout=PIPE, text=True)
         stdout, stderr = call.communicate()
         if stderr:
-            print(f"{stderr}", 4)
-            print("aborting...", 4)
+            print(f"{stderr}", 4, pad=True)
+            print("aborting...", 4, pad=True)
             sysexit()
         owner, group, octperm = stdout.replace("\n", "").split(" ")
         if (octperm[-1] == "7") != 0:
@@ -171,8 +171,8 @@ class InstallEnv():
             # owner has permissions
             if environ["USER"] == owner:
                 return True
-        print("We do not have sufficient permissions", 4)
-        print("Try another location", 2)
-        print("Bye", 0)
+        print("We do not have sufficient permissions", 4, pad=True)
+        print("Try another location", 2, pad=True)
+        print("Bye", 0, pad=True)
         sysexit(1)
         return False
