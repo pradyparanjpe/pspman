@@ -38,7 +38,7 @@ def timeout(wait: int = 10) -> None:
     '''
     for time_out in range(wait):
         sleep(1)
-        print(f"{wait - time_out:2.0f} seconds...", end="", flush=True, pad=True)
+        print(f"{wait - time_out:2.0f} seconds...", end="", flush=True, pad=False)
         print("\b" * 13, end="", flush=True, pad=True)
     print(f"{wait:2.0f} seconds...", flush=True, pad=True)
 
