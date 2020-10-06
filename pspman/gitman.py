@@ -29,8 +29,9 @@ from sys import exit as sysexit
 from subprocess import Popen, PIPE
 from pathlib import Path
 from re import compile as recompile
+from psprint import psprint as print
 from .classes import InstallEnv
-from .input_output import print_info, cli
+from .input_output import cli
 
 
 def git_pulls(env: InstallEnv) -> list:
@@ -40,7 +41,7 @@ def git_pulls(env: InstallEnv) -> list:
     pull_paths = []
     fails = 0
     if env.opt_flags['stale']:
-        print_info("But not trying to update them.", 1)
+        print("But not trying to update them.", 1)
         return pull_paths
     for git_path in env.git_project_paths:
         chdir(git_path)
@@ -48,19 +49,19 @@ def git_pulls(env: InstallEnv) -> list:
                      stderr=PIPE, stdout=PIPE, text=True)
         stdout, stderr = call.communicate()
         if "Already up to date" not in stdout:
-            print_info()
-            print_info(f"Updating {git_path}", 1)
+            print()
+            print(f"Updating {git_path}", 1)
             if any(m in stdout for m in ("+", "-")):
                 pull_paths.append(git_path)
             else:
                 fails += 1
-                print_info(f"Failed in {git_path}", 3)
+                print(f"Failed in {git_path}", 3)
     chdir(env.base_dir)
     for update in pull_paths:
-        print_info(f"Updated {update}", 1)
-    print_info("", 0)
+        print(f"Updated {update}", 1)
+    print("", 0)
     if fails:
-        print_info(f"{fails} project updates failed", 1)
+        print(f"{fails} project updates failed", 1)
     return pull_paths
 
 
@@ -159,22 +160,22 @@ def install_wrap(env: InstallEnv, projects_list: list,
         "pip install --user -U .",
         "meson/ninja",
     ]
-    print_info("", 0)
-    print_info("Looks like the method of installation is", 1)
-    print_info(inst_protocol[install_type], 0)
-    print_info("for the following projects", 0)
-    print_info("", 0)
+    print("", 0)
+    print("Looks like the method of installation is", 1)
+    print(inst_protocol[install_type], 0)
+    print("for the following projects", 0)
+    print("", 0)
     for proj in projects_list:
-        print_info(proj, 5)
+        print(proj, 5)
         chdir(proj)
-        print_info(f"cd {getcwd()}", 1)
+        print(f"cd {getcwd()}", 1)
         err = [specific_unknown, specific_make,
                specific_pip, specific_meson][install_type](env)
         if err:
-            print_info("Failed", 4)
+            print("Failed", 4)
             continue
     chdir(env.base_dir)
-    print_info("", 0)
+    print("", 0)
 
 
 def auto_install(git_paths: list, env: InstallEnv) -> None:
@@ -218,18 +219,18 @@ def new_install(env: InstallEnv) -> None:
         package = node_pat.findall(url)[-1].replace(".git", "").split(":")[-1]
         package_dir = Path.joinpath(env.clonedir, package)
         if isdir(package_dir):
-            print_info(f"{package} appears to be installed already", 3)
+            print(f"{package} appears to be installed already", 3)
             return False
         if isfile(package_dir):
-            print_info(f"A file named '{package_dir}' already exists", 3)
+            print(f"A file named '{package_dir}' already exists", 3)
             package_dir = package_dir.joinpath(".d")
             if package_dir.exists():
-                print_info("", 0)
-                print_info(f"{package_dir} also exists,", 3)
-                print_info("This is too much to handle...", 4)
+                print("", 0)
+                print(f"{package_dir} also exists,", 3)
+                print("This is too much to handle...", 4)
                 continue
-            print_info(f"Calling this project '{package_dir}'", 3)
-            print_info(f"Installing in {package_dir}", 1)
+            print(f"Calling this project '{package_dir}'", 3)
+            print(f"Installing in {package_dir}", 1)
         chdir(env.clonedir)
         makedirs(package_dir, exist_ok=False)
         call = Popen(["git", "clone", url, str(package_dir)],
@@ -243,8 +244,8 @@ def del_proj(env: InstallEnv) -> None:
     for package in env.pkg_delete:
         pkg_path = Path.joinpath(env.clonedir, package)
         if not isdir(pkg_path):
-            print_info(f"Couldn't find {package} in {env.clonedir}", 3)
-            print_info("Ignoring...", 0)
+            print(f"Couldn't find {package} in {env.clonedir}", 3)
+            print("Ignoring...", 0)
             continue
         chdir(pkg_path)
         call = Popen(["git", "remote", "-v"],
@@ -254,12 +255,12 @@ def del_proj(env: InstallEnv) -> None:
             return False
         fetch_source = recompile(r"^.*fetch.*").findall(
             stdout)[0].split(" ")[-2].split("\t")[-1]
-        print_info(f"Deleting {pkg_path}", 1)
-        print_info("I can't guess which files were installed.", 1)
-        print_info("So, leaving those scars behind...", 0)
-        print_info("This project may be added again from the following path",
+        print(f"Deleting {pkg_path}", 1)
+        print("I can't guess which files were installed.", 1)
+        print("So, leaving those scars behind...", 0)
+        print("This project may be added again from the following path",
                    0)
-        print_info(f"{fetch_source}", 0)
+        print(f"{fetch_source}", 0)
         chdir(env.clonedir)
         rmtree(Path.joinpath(env.clonedir, package))
 
@@ -281,7 +282,7 @@ def main() -> None:
     auto_install(updates, pkg_grp)
     new_install(env=pkg_grp)
     chdir(pkg_grp.base_dir)
-    print_info("done.", 1)
+    print("done.", 1)
     sysexit(0)
 
 

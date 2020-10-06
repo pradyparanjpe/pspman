@@ -28,6 +28,7 @@ from sys import exit as sysexit
 from time import sleep
 from subprocess import Popen, PIPE
 from pathlib import Path
+import pickle as pkl
 from .input_output import print_info
 
 
@@ -40,6 +41,21 @@ def timeout(wait: int = 10) -> None:
         print(f"{wait - time_out:2.0f} seconds...", end="", flush=True)
         print("\b" * 13, end="", flush=True)
     print(f"{wait:2.0f} seconds...", flush=True)
+
+
+class DirDB():
+    '''
+    database holding information about clonedir
+    '''
+    def __init__(self, **kwargs) -> None:
+        '''
+        clonedir: dir to clone
+        prefix: install-prefix
+        initialize empty database
+        '''
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+        self.install_types = []
 
 
 class InstallEnv():
@@ -59,10 +75,6 @@ class InstallEnv():
         # options
         self.clonedir = Path(clonedir)
         self.prefix = Path(prefix)
-        if not self.clonedir.exists():
-            makedirs(self.clonedir, exist_ok=True)
-        if not self.prefix.exists():
-            makedirs(self.prefix, exist_ok=True)
         self.pkg_install = list(kwargs.get("pkg_install", ""))
         self.pkg_delete = list(kwargs.get("pkg_delete", ""))
         self.opt_flags = {"only_pull": False,
@@ -73,9 +85,22 @@ class InstallEnv():
                 self.opt_flags[key] = val
 
         # inits
+        makedirs(self.clonedir, exist_ok=True)
+        makedirs(self.prefix, exist_ok=True)
         self.git_project_paths = []
         self.base_dir = getcwd()
         self.permission_check()
+        self.db = self.read(self.clonedir.joinpath(".psp_man_db"))
+
+    def read_db(self, db_file: Path) -> None:
+        '''
+        update information about software installed in "this" clonedir
+        '''
+        if db_file.exists():
+            with open(db_file, "rb") as database:
+                self.db = pkl.load(database)
+        else:
+            self.db = DirDB(clonedir=self.clonedir, prefix=self.prefix)
 
     def find_gits(self) -> list:
         '''

@@ -24,35 +24,6 @@ input/outputs
 
 from os import environ
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
-from colorama import Fore, Style
-
-
-def print_info(out_msg: str = '', p_type: int = 0, **kwargs) -> None:
-    '''
-    out_msg: Printed with an prefix of p_type
-    p_type: interpreted type to prefix out_msg
-    0: continuation
-    1: information
-    2: action
-    3: warning
-    4: error
-    5: list
-    6: debug
-    *: <empty>
-    **kwargs: passed to print function
-    '''
-    emit_l = [
-        Style.RESET_ALL + '          ' + Style.RESET_ALL,
-        Fore.GREEN +      ' [INFORM] ' + Style.RESET_ALL,
-        Fore.YELLOW +     ' [ACTION] ' + Style.RESET_ALL,
-        Fore.MAGENTA +    '[WARNING] ' + Style.RESET_ALL,
-        Fore.RED +        '  [ERROR] ' + Style.RESET_ALL,
-        Fore.BLUE +       '   [LIST] ' + Style.RESET_ALL,
-        Fore.CYAN +       '  [DEBUG] ' + Style.RESET_ALL,
-    ]
-    if not (0 <= p_type <= 6):
-        p_type = 0
-    print(emit_l[p_type] + str(out_msg), **kwargs, flush=True)
 
 
 def cli() -> Namespace:
