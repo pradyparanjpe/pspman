@@ -166,7 +166,7 @@ def install_wrap(env: InstallEnv, projects_list: list,
     print("for the following projects", 0, pad=True)
     print("", 0, pad=True)
     for proj in projects_list:
-        print(proj, 5, pad=True)
+        print(proj, 3, pad=True)
         chdir(proj)
         print(f"cd {getcwd()}", 1, pad=True)
         err = [specific_unknown, specific_make,
