@@ -29,7 +29,7 @@ from sys import exit as sysexit
 from subprocess import Popen, PIPE
 from pathlib import Path
 from re import compile as recompile
-from psprint import psprint as print
+from psprint import PRINT as print
 from .classes import InstallEnv
 from .input_output import cli
 

@@ -29,7 +29,7 @@ from time import sleep
 from subprocess import Popen, PIPE
 from pathlib import Path
 import pickle as pkl
-from psprint import psprint as print
+from psprint import PRINT as print
 
 
 def timeout(wait: int = 10) -> None:
@@ -73,7 +73,7 @@ class InstallEnv():
 
         '''
         # options
-        self.clonedir = Path(clonedir)
+        self.clonedir = Path(clonedir).absolute()
         self.prefix = Path(prefix)
         self.pkg_install = list(kwargs.get("pkg_install", ""))
         self.pkg_delete = list(kwargs.get("pkg_delete", ""))
@@ -102,7 +102,7 @@ class InstallEnv():
         else:
             self.db = DirDB(clonedir=self.clonedir, prefix=self.prefix)
 
-    def write_db(self, db_file:Path) -> None:
+    def write_db(self, db_file: Path) -> None:
         '''
         update information about software installed in "this" clonedir
         '''
