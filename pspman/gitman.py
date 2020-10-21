@@ -47,18 +47,18 @@ def git_pulls(env: InstallEnv) -> list:
         chdir(git_path)
         call = Popen(["git", "pull", "--recurse-submodules"],
                      stderr=PIPE, stdout=PIPE, text=True)
-        stdout, stderr = call.communicate()
+        stdout, _ = call.communicate()
         if "Already up to date" not in stdout:
-            print()
             print(f"Updating {git_path}", 1, pad=True)
             if any(m in stdout for m in ("+", "-")):
                 pull_paths.append(git_path)
             else:
                 fails += 1
                 print(f"Failed in {git_path}", 3, pad=True)
+    print()
     chdir(env.base_dir)
     for update in pull_paths:
-        print(f"Updated {update}", 1, pad=True)
+        print(f"Updated {update}", 3, pad=True)
     print("", 0, pad=True)
     if fails:
         print(f"{fails} project updates failed", 1, pad=True)
@@ -80,18 +80,18 @@ def specific_make(env: InstallEnv) -> int:
     if Path("./configure").exists():
         call = Popen(["./configure", "--prefix", env.prefix],
                      stdout=PIPE, stderr=PIPE, text=True)
-        stdout, stderr = call.communicate()
+        _, stderr = call.communicate()
         if stderr:
             return 1
     if Path("./Makefile").exists():
         call = Popen(["make"],
                      stdout=PIPE, stderr=PIPE, text=True)
-        stdout, stderr = call.communicate()
+        _, stderr = call.communicate()
         if stderr:
             return 1
         call = Popen(["make", "install"],
                      stdout=PIPE, stderr=PIPE)
-        stdout, stderr = call.communicate()
+        _, stderr = call.communicate()
         if stderr:
             return 1
     return 0
@@ -104,7 +104,7 @@ def specific_pip(_) -> int:
     '''
     call = Popen(["python", "-m", "pip", "install", "--user", "-U", "."],
                  stdout=PIPE, stderr=PIPE, text=True)
-    stdout, stderr = call.communicate()
+    _, stderr = call.communicate()
     if stderr:
         return 1
     return 0
@@ -117,26 +117,26 @@ def specific_meson(env: InstallEnv) -> int:
     makedirs(f'{getcwd()}/subprojects', exist_ok=True)
     call = Popen(["pspman", "-c", f"{getcwd()}/subprojects"],
                  stdout=PIPE, stderr=PIPE, text=True)
-    stdout, stderr = call.communicate()
+    _, stderr = call.communicate()
     makedirs(update_dir, exist_ok=True)
     call = Popen(["meson", "--wipe", "--buildtype=release", "--prefix",
-                 env.prefix, "-Db_lto=true", update_dir],
+                  env.prefix, "-Db_lto=true", update_dir],
                  stdout=PIPE, stderr=PIPE, text=True)
-    stdout, stderr = call.communicate()
+    _, stderr = call.communicate()
     if stderr:
         call = Popen(["meson", "--buildtype=release", "--prefix",
-                     env.prefix, "-Db_lto=true", update_dir],
+                      env.prefix, "-Db_lto=true", update_dir],
                      stdout=PIPE, stderr=PIPE, text=True)
-        stdout, stderr = call.communicate()
+        _, stderr = call.communicate()
         if stderr:
             return 1
     chdir(update_dir)
     call = Popen(["ninja"], stderr=PIPE, stdout=PIPE, text=True)
-    stdout, stderr = call.communicate()
+    _, stderr = call.communicate()
     if stderr:
         return 1
     call = Popen(["ninja", "install"], stderr=PIPE, stdout=PIPE, text=True)
-    stdout, stderr = call.communicate()
+    _, stderr = call.communicate()
     if stderr:
         return 1
     return 0
@@ -179,6 +179,9 @@ def install_wrap(env: InstallEnv, projects_list: list,
 
 
 def auto_install(git_paths: list, env: InstallEnv) -> None:
+    '''
+    automated clone and install attempt
+    '''
     if env.opt_flags['only_pull']:
         return
     unknown_installs = []
@@ -210,6 +213,9 @@ def auto_install(git_paths: list, env: InstallEnv) -> None:
 
 
 def new_install(env: InstallEnv) -> None:
+    '''
+    install given project
+    '''
     makedirs(env.clonedir, exist_ok=True)
     node_pat = recompile("(.*?)/")
     clone_paths_list = []
@@ -220,7 +226,7 @@ def new_install(env: InstallEnv) -> None:
         package_dir = Path.joinpath(env.clonedir, package)
         if isdir(package_dir):
             print(f"{package} appears to be installed already", 3, pad=True)
-            return False
+            return
         if isfile(package_dir):
             print(f"A file named '{package_dir}' already exists", 3, pad=True)
             package_dir = package_dir.joinpath(".d")
@@ -235,12 +241,15 @@ def new_install(env: InstallEnv) -> None:
         makedirs(package_dir, exist_ok=False)
         call = Popen(["git", "clone", '--recursive', url, str(package_dir)],
                      stdout=PIPE, stderr=PIPE, text=True)
-        stdout, stderr = call.communicate()
+        _, _ = call.communicate()
         clone_paths_list.append(package_dir)
     auto_install(clone_paths_list, env)
 
 
 def del_proj(env: InstallEnv) -> None:
+    '''
+    delete given project
+    '''
     for package in env.pkg_delete:
         pkg_path = Path.joinpath(env.clonedir, package)
         if not isdir(pkg_path):
@@ -252,20 +261,23 @@ def del_proj(env: InstallEnv) -> None:
                      stdout=PIPE, stderr=PIPE, text=True)
         stdout, stderr = call.communicate()
         if stderr:
-            return False
+            return
         fetch_source = recompile(r"^.*fetch.*").findall(
             stdout)[0].split(" ")[-2].split("\t")[-1]
         print(f"Deleting {pkg_path}", 1, pad=True)
         print("I can't guess which files were installed.", 1, pad=True)
         print("So, leaving those scars behind...", 0, pad=True)
         print("This project may be added again from the following path",
-                   0)
+              0)
         print(f"{fetch_source}", 0, pad=True)
         chdir(env.clonedir)
         rmtree(Path.joinpath(env.clonedir, package))
 
 
 def main() -> None:
+    '''
+    main subroutine
+    '''
     args = cli()
     pkg_grp = InstallEnv(
         clonedir=args.clone_dir,
