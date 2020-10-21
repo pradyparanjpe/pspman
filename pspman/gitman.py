@@ -102,7 +102,8 @@ def specific_pip(_) -> int:
     specific python setup
     return: failure: 1; success: 0
     '''
-    Popen(["python", "-m", "pip", '-U', '--user', "-r", "./requirements.txt"])
+    Popen(["python", "-m", "pip", 'install', '-U', '--user',
+           "-r", "./requirements.txt"])
     call = Popen(["python", "-m", "pip", "install", "--user", "-U", "."],
                  stdout=PIPE, stderr=PIPE, text=True)
     _, stderr = call.communicate()
