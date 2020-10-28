@@ -87,7 +87,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Pradyumna Paranjape',
     author_email='pradyparanjpe@rediffmail.com',
-    url="https://github.com/pradyparanjpe",
+    url="https://github.com/pradyparanjpe/pspman.git",
     packages=find_packages(),
     install_requires=['psprint'],
     scripts=['bin/pspman', ],

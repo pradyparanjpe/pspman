@@ -119,7 +119,7 @@ class InstallEnv():
                         Path.joinpath(self.clonedir, leaf)
                     )
                     count += 1
-        print(f"{count} project(s) found in {str(self.clonedir)}", 1, pad=True)
+        print(f"{count} project(s) found in {str(self.clonedir)}", pref=1, pad=True)
 
     def permission_check(self) -> None:
         '''
@@ -127,17 +127,17 @@ class InstallEnv():
         '''
         # Am I root?
         if environ["USER"].lower() == "root":
-            print("I hate dictators", 3, pad=True)
+            print("I hate dictators", pref=3, pad=True)
             if not self.opt_flags['force_root']:
-                print("Bye", 0, pad=True)
+                print("Bye", pref=0, pad=True)
                 sysexit(2)
-            print("I can only hope you know what you are doing...", 3, pad=True)
-            print("Here is a chance to kill me in", 2, pad=True)
+            print("I can only hope you know what you are doing...", pref=3, pad=True)
+            print("Here is a chance to kill me in", pref=2, pad=True)
             timeout(10)
-            print("", 0, pad=True)
-            print("¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯", 3, pad=True)
-            print("", 0, pad=True)
-            print("[INFO] Proceeding...", 1, pad=True)
+            print("", pref=0, pad=True)
+            print("¯\_(ツ)_/¯ Your decision ¯\_(ツ)_/¯", pref=3, pad=True)
+            print("", pref=0, pad=True)
+            print("[INFO] Proceeding...", pref=1, pad=True)
         else:
             # Is installation directory read/writable
             parentdir = Path(self.clonedir)
@@ -156,8 +156,8 @@ class InstallEnv():
                      stderr=PIPE, stdout=PIPE, text=True)
         stdout, stderr = call.communicate()
         if stderr:
-            print(f"{stderr}", 4, pad=True)
-            print("aborting...", 4, pad=True)
+            print(f"{stderr}", pref=4, pad=True)
+            print("aborting...", pref=4, pad=True)
             sysexit()
         owner, group, octperm = stdout.replace("\n", "").split(" ")
         if (octperm[-1] == "7") != 0:
@@ -176,8 +176,8 @@ class InstallEnv():
             # owner has permissions
             if environ["USER"] == owner:
                 return True
-        print("We do not have sufficient permissions", 4, pad=True)
-        print("Try another location", 2, pad=True)
-        print("Bye", 0, pad=True)
+        print("We do not have sufficient permissions", pref=4, pad=True)
+        print("Try another location", pref=2, pad=True)
+        print("Bye", pref=0, pad=True)
         sysexit(1)
         return False
