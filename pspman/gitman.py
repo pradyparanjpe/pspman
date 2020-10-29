@@ -106,9 +106,9 @@ def specific_pip(_) -> int:
         call = Popen(["python", "-m", "pip", 'install', '-U',
                       '--user', "-r", "./requirements.txt"],
                      stdout=PIPE, stderr=PIPE, text=True)
-    _, stderr = call.communicate()
-    if stderr:
-        return 1
+        _, stderr = call.communicate()
+        if stderr:
+            return 1
     call = Popen(["python", "-m", "pip", "install", "--user", "-U", "."],
                  stdout=PIPE, stderr=PIPE, text=True)
     _, stderr = call.communicate()
@@ -171,7 +171,7 @@ def install_wrap(env: InstallEnv, projects_list: list,
     print("Looks like the method of installation is", pref=1, pad=True)
     print(inst_protocol[install_type], pref=0, pad=True)
     print("for the following projects", pref=0, pad=True)
-    print("", 0, pad=True)
+    print("", pref=0, pad=True)
     for proj in projects_list:
         print(proj, pref=3, pad=True)
         chdir(proj)
