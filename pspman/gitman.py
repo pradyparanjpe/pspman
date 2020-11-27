@@ -305,7 +305,6 @@ def list_proj(env, display=False, grace_exit=True):
     '''
     list all available projects
     '''
-    print(f'{env.prefix}/programs/', pref='bug')
     if display:
         for proj in env.git_project_paths:
             print(
