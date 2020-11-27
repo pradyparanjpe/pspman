@@ -332,7 +332,8 @@ def main() -> None:
     list_proj(env=pkg_grp, display=args.list_projs,
               grace_exit=not(args.only_pull
                              or args.pkg_delete
-                             or args.pkg_install))
+                             or args.pkg_install
+                             or not args.list_projs))
     del_proj(env=pkg_grp)
     updates = git_pulls(env=pkg_grp)
     auto_install(updates, pkg_grp)
