@@ -301,6 +301,20 @@ def del_proj(env: InstallEnv) -> None:
         rmtree(Path.joinpath(env.clonedir, package))
 
 
+def list_proj(env, display=False, grace_exit=True):
+    '''
+    list all available projects
+    '''
+    print(f'{env.prefix}/programs/', pref='bug')
+    if display:
+        for proj in env.git_project_paths:
+            print(
+                str(proj).replace(f'{env.prefix}/programs/', ''),
+                pref='list'
+            )
+    if grace_exit:
+        sysexit(0)
+
 def main() -> None:
     '''
     main subroutine
@@ -315,8 +329,12 @@ def main() -> None:
         force_root=args.force_root,
         only_pull=args.only_pull,
     )
-    del_proj(env=pkg_grp)
     pkg_grp.find_gits()
+    list_proj(env=pkg_grp, display=args.list_projs,
+              grace_exit=not(args.only_pull
+                             or args.pkg_delete
+                             or args.pkg_install))
+    del_proj(env=pkg_grp)
     updates = git_pulls(env=pkg_grp)
     auto_install(updates, pkg_grp)
     new_install(env=pkg_grp)

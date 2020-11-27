@@ -42,6 +42,8 @@ def cli() -> Namespace:
                         help='force working with root permissions [DANGEROUS]')
     parser.add_argument('-s', '--stale', action='store_true',
                         help='skip updates, let the repository remain stale')
+    parser.add_argument('-l', '--list-projs', action='store_true',
+                        help='display list of installed repositories and exit')
     parser.add_argument('-o', '--only-pull', action='store_true',
                         help='only pull, do not try to install')
     parser.add_argument('-c', '--clone-dir', type=str, nargs="?",
