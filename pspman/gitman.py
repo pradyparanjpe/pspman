@@ -22,7 +22,7 @@ Personal Simple Python-based package manager that clones git
 '''
 
 
-from os import getcwd, chdir, makedirs
+from os import getcwd, chdir, makedirs, environ
 from os.path import isdir, isfile
 from shutil import rmtree
 from sys import exit as sysexit
@@ -97,6 +97,21 @@ def specific_make(env: InstallEnv) -> int:
     return 0
 
 
+def specific_go(env:InstallEnv) -> int:
+    '''
+    specific go setup
+    return: failure:1; success:0
+    '''
+    myenv = environ.copy()
+    myenv['GOBIN'] = f"{env.prefix}/bin"
+    call = Popen(["go", "install"], env=myenv,
+                 stdout=PIPE, stderr=PIPE, text=True)
+    _, stderr = call.communicate()
+    if stderr:
+        return 1
+    return 0
+
+
 def specific_pip(_) -> int:
     '''
     specific python setup
@@ -166,6 +181,7 @@ def install_wrap(env: InstallEnv, projects_list: list,
         "./configure -> make -> make install",
         "pip install --user -U .",
         "meson/ninja",
+        "go install"
     ]
     print("", pref=0, pad=True)
     print("Looks like the method of installation is", pref=1, pad=True)
@@ -177,7 +193,7 @@ def install_wrap(env: InstallEnv, projects_list: list,
         chdir(proj)
         print(f"cd {getcwd()}", pref=1, pad=True)
         err = [specific_unknown, specific_make,
-               specific_pip, specific_meson][install_type](env)
+               specific_pip, specific_meson, specific_go][install_type](env)
         if err:
             print("Failed", pref=4, pad=True)
             continue
@@ -194,12 +210,14 @@ def auto_install(git_paths: list, env: InstallEnv) -> None:
     unknown_installs = []
     make_projects = []
     meson_projects = []
+    go_projects = []
     pip_projects = []
     protocols = (
         unknown_installs,
         make_projects,
         pip_projects,
         meson_projects,
+        go_projects,
     )
     for git_path in git_paths:
         if git_path.joinpath("Makefile").exists():
@@ -210,6 +228,8 @@ def auto_install(git_paths: list, env: InstallEnv) -> None:
             pip_projects.append(git_path)
         elif git_path.joinpath('meson.build').exists():
             meson_projects.append(git_path)
+        elif git_path.joinpath('main.go').exists():
+            go_projects.append(git_path)
         else:
             unknown_installs.append(git_path)
     for index, proj_protocol in enumerate(reversed(protocols)):
