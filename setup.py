@@ -55,7 +55,7 @@ def mandb() -> None:
         makedirs(myhome.joinpath(workdir), exist_ok=True)
     if "pspman" not in environ["PATH"]:
         with open(environ["HOME"] + ossep + ".bashrc", "a") as bash_f_h:
-            print('export PATH="${PATH}:${HOME}/.pspman/bin"', file=bash_f_h, pad=True)
+            print('export PATH="${PATH}:${HOME}/.pspman/bin"', file=bash_f_h)
 
 
 class PostDevelopCommand(install):

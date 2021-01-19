@@ -18,12 +18,12 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-__init__ module
+python module call
 '''
 
 
-from .gitman import main
+from . import call
 
 
 if __name__ in "__main__" or "pspman.__main__":
-    main()
+    call()

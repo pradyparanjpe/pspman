@@ -1,0 +1,23 @@
+[metadata]
+name = pspman
+version = 21.1.14
+description = Personal Simple Package Manager
+author = Pradyumna Paranjape
+author_email = pradyparanjpe@rediffmail.com
+url = https://github.com/pradyparanjpe/pspman
+license = GPLv3
+platforms =
+    linux
+
+[options]
+packages = find:
+scripts = bin/pspman
+install_requires =
+    psprint
+include_package_data = True
+python_requires =
+    >=3.7
+
+[options.entry_points]
+console_scripts =
+    main = launcher_menus:check_installations

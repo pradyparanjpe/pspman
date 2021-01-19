@@ -22,11 +22,12 @@ input/outputs
 '''
 
 
-from os import environ
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
+import os
+import typing
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 
-def cli() -> Namespace:
+def cli() -> typing.Dict[str, object]:
     '''
     Parse command line arguments
     '''
@@ -35,7 +36,7 @@ def cli() -> Namespace:
     CAUTION: DO NOT RUN THIS SCRIPT AS ROOT.
     CAUTION: If you still insist, I won't care.
     '''
-    homedir = environ["HOME"]
+    homedir = os.environ["HOME"]
     parser = ArgumentParser(description=description,
                             formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-f', '--force-root', action='store_true',
@@ -53,8 +54,8 @@ def cli() -> Namespace:
                         default=f'{homedir}/.pspman',
                         help='path for installation')
     parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
-                        nargs="*", help='URL to clone new project')
+                        nargs="*", help='URL to clone new project', default=[])
     parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
-                        nargs="*", help='PROJ to clone new project')
-    args = parser.parse_args()
+                        nargs="*", help='PROJ to clone new project', default=[])
+    args = vars(parser.parse_args())
     return args
