@@ -40,7 +40,7 @@ Never supply root password or sudo prefix unless you really know what you are do
 Create multiple Clone Directories (argument `-c`) as package groups that update together.
   
 # INSTALL
-See INSTALL.md
+See [INSTALL](INSTALL.md)
  
 # OPTIONS
 ## -h, --help
@@ -66,23 +66,23 @@ Delete PROJ
 
 # EXAMPLES
 ##  Show help
-```
-$ pspman -h
+```{.sh}
+pspman -h
 ```
 
 ##  Update default locations
-```
-$ pspman
+```{.sh}
+pspman
 ```
   
 ##  Clone and install `git@gitolite.local:foo.git`
-```
-$ pspman -i git@gitolite.local/foo.git
+```{.sh}
+pspman -i git@gitolite.local/foo.git
 ```
   
 ##  delete package `foo` located in directory `bar`
-```
-$ pspman -d foo -c bar
+```{.sh}
+pspman -d foo -c bar
 ```
 
 # ENVIRONMENT

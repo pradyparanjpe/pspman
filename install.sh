@@ -47,7 +47,6 @@ function get_pip() {
 
 function get_pspman() {
     echo "installing pspman"
-    python3 -m pip install --user -U colorama
     python3 -m pip install --user -U pspman
 }
 
@@ -58,6 +57,8 @@ function install() {
         && exit 1
     get_pip
     get_pspman
+    echo "Updating Pspman"
+    python3 -m 'pspman' -i pspman
 }
 
 function restore_path() {
@@ -66,7 +67,6 @@ function restore_path() {
 
 function del_pspman() {
     pip uninstall -y pspman
-    pip uninstall -y colorama
 }
 
 function uninstall() {
