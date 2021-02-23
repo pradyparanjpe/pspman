@@ -68,3 +68,6 @@ def call() -> None:
     os.chdir(pkg_grp.base_dir)
     print("done.", mark=1)
     sys.exit(0)
+
+
+__version__ = '21.2.23'

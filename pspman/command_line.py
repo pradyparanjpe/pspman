@@ -25,7 +25,7 @@ input/outputs
 import os
 import typing
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-
+import argcomplete
 
 def cli() -> typing.Dict[str, object]:
     '''
@@ -57,5 +57,6 @@ def cli() -> typing.Dict[str, object]:
                         nargs="*", help='URL to clone new project', default=[])
     parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
                         nargs="*", help='PROJ to clone new project', default=[])
+    argcomplete.argcomplete(parser)
     args = vars(parser.parse_args())
     return args

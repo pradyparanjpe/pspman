@@ -136,11 +136,12 @@ class ActionTag():
             TagError: already tagged
 
         '''
-        if self.tag & 0x10:
-            self.tag |= 0x10
+        if (0x0 < self.tag//0x10 < 0x5):
+            if not self.tag & 0x10:
+                # already tagged
+                raise TagError(self.tag, 'make')
         else:
-            # already tagged
-            raise TagError(self, 'make')
+            self.tag |= 0x10
 
     def pip(self) -> None:
         '''
@@ -150,11 +151,13 @@ class ActionTag():
             TagError: already tagged
 
         '''
-        if self.tag & 0x20:
-            self.tag |= 0x20
+        if (0x0 < self.tag//0x10 < 0x5):
+            if not self.tag & 0x20:
+                # already tagged
+                print(self.tag, mark='bug')
+                raise TagError(self.tag, 'pip')
         else:
-            # already tagged
-            raise TagError(self.tag, 'pip')
+            self.tag |= 0x20
 
     def meson(self) -> None:
         '''
@@ -164,11 +167,12 @@ class ActionTag():
             TagError: already tagged
 
         '''
-        if self.tag & 0x30:
-            self.tag |= 0x30
+        if (0x0 < self.tag//0x10 < 0x5):
+            if not self.tag & 0x30:
+                # already tagged
+                raise TagError(self.tag, 'meson')
         else:
-            # already tagged
-            raise TagError(self.tag, 'meson')
+            self.tag |= 0x30
 
     def goin(self) -> None:
         '''
@@ -178,11 +182,12 @@ class ActionTag():
             TagError: already tagged
 
         '''
-        if self.tag & 0x40:
-            self.tag |= 0x40
+        if (0x0 < self.tag//0x10 < 0x5):
+            if not self.tag & 0x40:
+                # already tagged
+                raise TagError(self.tag, 'go')
         else:
-            # already tagged
-            raise TagError(self.tag, 'go')
+            self.tag |= 0x40
 
     def err(self) -> None:
         '''
@@ -324,7 +329,7 @@ class InstallEnv():
         Try to install by calling ./configure -> make -> make install
 
         Args:
-            self: Install with this selfironment
+            self: Install with this environment
 
         '''
         print()
@@ -364,7 +369,7 @@ class InstallEnv():
         Install repository by ``go install``
 
         Args:
-            self: Install with this selfironment
+            self: Install with this environment
 
         '''
         print()
@@ -375,7 +380,7 @@ class InstallEnv():
                 # not a meson installation
                 continue
             print(f"{os.path.basename(package)}", mark='list')
-            myself = os.selfiron.copy()
+            myself = os.environ.copy()
             myself['GOBIN'] = str(self.prefix.resolve('bin'))
             go_in = common.process_comm(
                 "go", "install", "-i", '-pkgdir', f'{str(package)}',
@@ -390,7 +395,7 @@ class InstallEnv():
         Install repository using ``pip``
 
         Args:
-            self: Install with this selfironment
+            self: Install with this environment
 
         '''
         print()
@@ -421,7 +426,7 @@ class InstallEnv():
         Install repository by building with ninja/json
 
         Args:
-            self: Install with this selfironment
+            self: Install with this environment
 
         '''
         print()
@@ -438,13 +443,15 @@ class InstallEnv():
             _ = common.process_comm("pspman", "-c", str(subproject_dir),
                                     fail_handle='report')
             os.makedirs(update_dir, exist_ok=True)
-            build = common.process_comm("meson", "--wipe", "--buildtype=release",
-                                        "--prefix", self.prefix, "-Db_lto=true",
-                                        update_dir, fail_handle='report')
+            build = common.process_comm(
+                "meson", "--wipe", "--buildtype=release", "--prefix",
+                self.prefix, "-Db_lto=true", update_dir, fail_handle='report'
+            )
             if build is None:
-                build = common.process_comm("meson", "--buildtype=release",
-                                            "--prefix", self.prefix, "-Db_lto=true",
-                                            update_dir, fail_handle='report')
+                build = common.process_comm(
+                    "meson", "--buildtype=release", "--prefix", self.prefix,
+                    "-Db_lto=true", update_dir, fail_handle='report'
+                )
 
                 if build is None:
                     self.git_project_paths[package].err()
@@ -464,7 +471,7 @@ class InstallEnv():
 
         Args:
             git_paths: path of cloned git repositories
-            self: Install with this selfironment
+            self: Install with this environment
 
         '''
         if self.opt_flags['only_pull']:
@@ -498,7 +505,7 @@ class InstallEnv():
         Install given project
 
         Args:
-            self: Install with this selfironment
+            self: Install with this environment
 
         '''
         os.makedirs(self.clonedir, exist_ok=True)
@@ -506,8 +513,10 @@ class InstallEnv():
         for url in self.pkg_install:
             if url[-1] != "/":
                 url += "/"
-            package = node_pat.findall(url)[-1].replace(".git", "").split(":")[-1]
-            package_dir = pathlib.Path.joinpath(self.clonedir, package).resolve()
+            package = node_pat.findall(url)[-1]\
+                              .replace(".git", "").split(":")[-1]
+            package_dir = pathlib.Path.joinpath(self.clonedir, package)\
+                                      .resolve()
             if os.path.isdir(package_dir):
                 print(f"{package} appears to be installed already",
                       mark=3)
@@ -524,8 +533,10 @@ class InstallEnv():
                 print(f"Calling this project '{package_dir}'", mark=3)
                 print(f"Installing in {package_dir}", mark=1)
             os.makedirs(package_dir, exist_ok=False)
-            _ = common.process_comm('git', "-C", f"{str(self.clonedir)}", 'clone',
-                                    fail_handle='report')
+            _ = common.process_comm(
+                'git', "-C", f"{str(self.clonedir)}",
+                'clone', url, fail_handle='report'
+            )
             self.git_project_paths[package_dir] = ActionTag(0x04)
 
 
@@ -534,13 +545,12 @@ class InstallEnv():
         Delete given project
 
         Args:
-            self: Install with this selfironment
+            self: Install with this environment
         '''
         for package in self.pkg_delete:
             pkg_path = pathlib.Path.joinpath(self.clonedir, package)
             if not os.path.isdir(pkg_path):
-                print(f"Couldn't find {package} in {self.clonedir}",
-                      mark=3)
+                print(f"Couldn't find {package} in {self.clonedir}", mark=3)
                 print("Ignoring...", mark=0)
                 continue
             g_url = common.process_comm('git', "-C", f"{str(pkg_path)}",
@@ -563,15 +573,17 @@ class InstallEnv():
         List all available projects
 
         Args
-            self: Install with this selfironment
+            self: Install with this environment
             display: display list of projects
             grace_exit: exit after display?
 
         '''
         if display:
             for proj in self.git_project_paths.keys():
-                g_url = common.process_comm("git", "-C", f"{str(proj)}", "remote", "-v",
-                                            fail_handle='report')
+                g_url = common.process_comm(
+                    "git", "-C", f"{str(proj)}", "remote", "-v",
+                    fail_handle='report'
+                )
                 if g_url is None:
                     continue
                 if g_url:
@@ -579,14 +591,12 @@ class InstallEnv():
                         g_url)[0].split(" ")[-2].split("\t")[-1],
                     print(
                         str(proj).replace(f'{self.clonedir}/', '') + ":",
-                        fetch_source[0],
-                        mark='list'
+                        fetch_source[0], mark='list'
                     )
                 else:
                     print(
                         str(proj).replace(f'{self.clonedir}/', '') + ":",
-                        'Remote URI Unavailable',
-                        mark='warn'
+                        'Remote URI Unavailable', mark='warn'
                     )
         if grace_exit:
             sys.exit(0)
@@ -597,7 +607,7 @@ class InstallEnv():
         Pull git projects
 
         Args:
-            self: pull repository in this selfironment
+            self: pull repository in this environment
 
         '''
         pull_paths = []
@@ -611,8 +621,8 @@ class InstallEnv():
                 # Stale flag
                 continue
             g_pull = common.process_comm(
-                "git", '-C', f'{str(git_path)}', "pull", "--recurse-submodules",
-                fail_handle='ignore'
+                "git", '-C', f'{str(git_path)}', "pull",
+                "--recurse-submodules", fail_handle='ignore'
             )
             if g_pull and "Already up to date" not in g_pull:
                 print(f"Updating {git_path}", mark=1)

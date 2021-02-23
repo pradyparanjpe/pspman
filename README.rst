@@ -1,26 +1,5 @@
-.. pspman documentation master file, created by
-   sphinx-quickstart on Wed Jan 13 18:58:53 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to pspman's documentation!
-==================================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-PSPMAN
-======
+NAME
+====
 
 **P**\ ersonal **S**\ imple **P**\ ackage **Man**\ ager (pspman) - a
 package manager aid
@@ -49,7 +28,6 @@ Application:
    -  ``configure``, ``make``, ``make install``.
    -  ``pip --user -U install .`` .
    -  meson/ninja.
-   -  ``go install``
 
 -  Delete cloned directories [but not installation files]
 
@@ -82,81 +60,7 @@ that update together.
 INSTALL
 =======
 
-PREREQUISITES
--------------
-
--  git
--  python3-pip
-
-
-Windows
--------
-
-Sorry
-
-Apple Mac
----------
-
-This App might not work for you, since you didn’t have to pay for it.
-
-Linux
------
-
-pip
-~~~
-
--  install using pip
-
-::
-
-   pip install --user -U pspman
-
-git
-~~~
-
--  Clone `this <https://github.com/pradyparanjpe/pspman.git>`__
-   repository
-
-::
-
-   git clone https://github.com/pradyparanjpe/pspman.git && cd pspman
-
--  Run Installation script
-
-::
-
-   bash ./install.sh install
-
-UNINSTALL
-=========
-
-.. _pip-1:
-
-pip
-~~~
-
--  Remove using pip
-
-::
-
-   pip uninstall -y pspman
-
-.. _git-1:
-
-git
-~~~
-
--  Run Installation script
-
-::
-
-   cd pspman && bash install.sh uninstall
-
-UPDATE
-======
-
-(Use me to update myself) - Run a regular update on the folder in which
-pspman is cloned ``pspman``
+See `INSTALL <INSTALL.md>`__
 
 OPTIONS
 =======
@@ -202,30 +106,30 @@ EXAMPLES
 Show help
 ---------
 
-::
+.. code:: sh
 
-   $ pspman -h
+   pspman -h
 
 Update default locations
 ------------------------
 
-::
+.. code:: sh
 
-   $ pspman
+   pspman
 
 Clone and install ``git@gitolite.local:foo.git``
 ------------------------------------------------
 
-::
+.. code:: sh
 
-   $ pspman -i git@gitolite.local/foo.git
+   pspman -i git@gitolite.local/foo.git
 
 delete package ``foo`` located in directory ``bar``
 ---------------------------------------------------
 
-::
+.. code:: sh
 
-   $ pspman -d foo -c bar
+   pspman -d foo -c bar
 
 ENVIRONMENT
 ===========
@@ -251,17 +155,3 @@ SEE ALSO
 ========
 
 git(1)
-
-.. automodule:: pspman
-   :members:
-
-
-classes
-=======
-.. automodule:: pspman.classes
-   :members:
-
-common
-======
-.. automodule:: pspman.common
-   :members:
