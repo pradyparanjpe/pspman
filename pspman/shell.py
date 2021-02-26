@@ -18,7 +18,7 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-common functions
+shell functions
 
 '''
 
@@ -82,6 +82,7 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
         **kwargs
     )
     stdout, stderr = process.communicate(timeout=timeout)
+    print(stdout, mark='bug')
     if stderr:
         if fail_handle == 'fail':
             raise CommandError(cmd, stderr)

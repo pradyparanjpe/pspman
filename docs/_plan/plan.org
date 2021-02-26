@@ -1,0 +1,87 @@
+# -*- mode:org -*-
+#+TITLE: pspman plan
+#+AUTHOR: Pradyumna Paranjape
+#+OPTIONS: toc:1 num:nil html-postamble:nil ^:nil
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-bigblow.setup
+#+HTML_HEAD: <style> @media only screen and (max-width: 960px) {#content{background-color: #101018; color: #e7f0f7; max-width: 100%; overflow-x: scroll;}} </style>
+#+HTML_HEAD: <style> body{background-color: #101018; color: #e7f0f7; font-size: 18px;} </style>
+#+HTML_HEAD: <style> #content{background-color: #101018; color: #e7f0f7;} </style>
+#+HTML_HEAD: <style> #left-panel-button{display: none;}</style>
+#+HTML_HEAD: <style> #minitoc{display: none;}</style>
+#+HTML_HEAD: <style> #tabs{background-color: #16181b; font-size: 18px;} </style>
+#+HTML_HEAD: <style> #tabs li a{background-color: #16181b; font-size: 18px;} </style>
+#+HTML_HEAD: <style> .buttons{background-color: #0b0c0d;} </style>
+#+HTML_HEAD: <style> #table-of-contents header{background-color: #101018; color: #e7f0f7;}</style>
+#+HTML_HEAD: <style> table, th, td {border: none; border-left: none; border-right: none;} </style>
+#+HTML_HEAD: <style> b{background-color: #101018; color: #ffffff;} </style>
+#+HTML_HEAD: <style> i{background-color: #101018; color: #e7f0f7;} </style>
+#+HTML_HEAD: <style> a, a:link, a:visited, a:hover{color: #ffb000; text-decoration: none}</style>
+#+HTML_HEAD: <style> h1{color: #ff1f4f; background: #010509; font-size: 2em;} </style>
+#+HTML_HEAD: <style> h2{color: #3f7fff; font-size: 1.75em; border-bottom: 1px solid #585c60;} </style>
+#+HTML_HEAD: <style> h3{color: #3fff9f; font-size: 1.5em; border-bottom: 1px dotted #585c60;} </style>
+#+HTML_HEAD: <style> h4{color: #afef1f; font-size: 1.25em; border-bottom: none;} </style>
+#+HTML_HEAD: <style> table thead th{background-color: #000000;}</style>
+#+HTML_HEAD: <style> table tr:nth-child(2n-1) td{background-color: #181820;}</style>
+#+HTML_HEAD: <style> table tr:nth-child(2n) td{background-color: #080810;}</style>
+#+LATEX_HEADER: \usepackage[a4paper, margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage[perpage]{footmisc}
+#+LATEX: \today
+
+* Faculties
+  - List
+  - Update
+    - pull code
+    - install
+  - Add
+  - Remove
+  - lock
+
+* Objects
+** Environment
+*** Clone dir
+    Parent directory root for all projects
+*** Prefix
+    Prefix for installations
+** Project
+*** URL
+    URL to clone
+*** name
+    Name of directory (Also name of project)
+*** Base Tag
+    Base Tag of project
+
+* Database
+  *Structure*: hidden yaml file
+** Contents
+*** git_projects
+    * *format*: name: gp_data
+    * *name*: name of git_project
+    * *gp_data*: GitProject.__dict__()
+
+* Choices
+** Force Risk
+   - Force risky installation as root
+** Stale
+   - Do not try to update existing projects
+
+** Only Pull
+   - Do not install projects
+
+* Queues
+** PullQueue:
+   Queue to pull projects
+   - Rate limited by /speed of internet/
+   - Speed: 2
+   - Chronology: 1
+
+** InstallQueue:
+   Queue for installation of projects
+   - Rate limited by /speed of processor\/RAM/
+   - Speed: 1
+   - Chronology: 2
+
+** ErrorQueue:
+   Handle Errors
+   - Rate limited by /action to be taken (user input)/
+   - Speed: 3
+   - Chronology: 3

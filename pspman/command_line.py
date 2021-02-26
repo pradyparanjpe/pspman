@@ -24,21 +24,27 @@ input/outputs
 
 import os
 import typing
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import argcomplete
+from .classes import InstallEnv
+from .project_actions import (del_proj, list_proj, git_pulls,
+                              find_gits, add_git)
+from .installations import auto_install, report_failures
+from . import print
+
 
 def cli() -> typing.Dict[str, object]:
     '''
     Parse command line arguments
     '''
     description = '''
-    NOTICE: This is only intended for \"user\" installs.
+    NOTICE: This is only intended for "user" installs.
     CAUTION: DO NOT RUN THIS SCRIPT AS ROOT.
     CAUTION: If you still insist, I won't care.
     '''
     homedir = os.environ["HOME"]
     parser = ArgumentParser(description=description,
-                            formatter_class=ArgumentDefaultsHelpFormatter)
+                            formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-f', '--force-root', action='store_true',
                         help='force working with root permissions [DANGEROUS]')
     parser.add_argument('-s', '--stale', action='store_true',
@@ -56,7 +62,45 @@ def cli() -> typing.Dict[str, object]:
     parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
                         nargs="*", help='URL to clone new project', default=[])
     parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
-                        nargs="*", help='PROJ to clone new project', default=[])
-    argcomplete.argcomplete(parser)
+                        nargs="*", help='PROJ to clone new project',
+                        default=[])
+    argcomplete.autocomplete(parser)
     args = vars(parser.parse_args())
     return args
+
+
+def call() -> None:
+    '''
+    Parse command line arguments to
+
+        * list cloned git repositories,
+        * add / remove git repositories and corresponding installations
+        * pull git repositories,
+        * update (default),
+
+    '''
+    args = cli()
+    pkg_grp = InstallEnv(
+        clonedir=args.get('clone_dir'),
+        prefix=args.get('prefix'),
+        pkg_install=args.get("pkg_install", []),
+        pkg_delete=args.get("pkg_delete", ""),
+        stale=args.get('stale', False),
+        force_root=args.get('force_root'),
+        only_pull=args.get('only_pull'),
+    )
+    find_gits(pkg_grp)
+    list_proj(
+        env=pkg_grp,
+        display=args.get('list_projs', False),
+        grace_exit=not(
+            not args.get('list_projs') or args.get('only_pull', False)
+            or args.get('pkg_delete', []) or args.get('pkg_install', [])
+        )
+    )
+    del_proj(pkg_grp)
+    git_pulls(pkg_grp)
+    add_git(pkg_grp)
+    if not args.get('only_pull'):
+        auto_install(pkg_grp)
+    print("done.", mark=1)

@@ -18,22 +18,26 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-PSPMAN
-
-'''
-
-# Configure DEFAULT_PRINT
-from psprint import DEFAULT_PRINT
-DEFAULT_PRINT.switches['pad'] = True
-DEFAULT_PRINT.print_kwargs['flush'] = True
-DEFAULT_PRINT.switches['short'] = False
-print = DEFAULT_PRINT.psprint
-'''
-Customized psprint function
+Miscellaneous tools
 
 '''
 
 
-from .command_line import call
-__all__ = ['call']
-__version__ = '21.2.23'
+import time
+from . import print
+
+
+def timeout(wait: int = 10) -> None:
+    '''
+    Print a count-down time that waits for the process to get killed
+
+    Args:
+        wait: wait for seconds
+
+    '''
+    for time_out in range(wait):
+        time.sleep(1)
+        print(f"{wait - time_out:2.0f} seconds...", end="",
+              flush=True, pad=False)
+        print("\b" * 13, end="", flush=True, pad=True)
+    print(f"{wait:2.0f} seconds...", disabled=True)

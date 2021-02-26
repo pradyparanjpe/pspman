@@ -18,22 +18,27 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-PSPMAN
-
-'''
-
-# Configure DEFAULT_PRINT
-from psprint import DEFAULT_PRINT
-DEFAULT_PRINT.switches['pad'] = True
-DEFAULT_PRINT.print_kwargs['flush'] = True
-DEFAULT_PRINT.switches['short'] = False
-print = DEFAULT_PRINT.psprint
-'''
-Customized psprint function
+Database Object
+`INCOMPLETE`
 
 '''
 
 
-from .command_line import call
-__all__ = ['call']
-__version__ = '21.2.23'
+from . import print
+
+
+class DirDB():
+    '''
+    Database holding information about clonedir
+    [Future feature]
+
+    Args:
+        clonedir: Directory in which gits are cloned and maintained
+        prefix:  Directory in which "bin", "share", "lib" are stored
+
+    '''
+
+    def __init__(self, **kwargs) -> None:
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+        self.install_types = []

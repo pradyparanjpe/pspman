@@ -22,15 +22,16 @@
 
 
 function add_to_path() {
-    [[ ! $PATH =~ "${HOME}/.local/bin" ]] \
-        && echo "export PATH=\"\${PATH}:\${HOME}/.local/bin\"" \
-                >> "${HOME}/.bashrc"
-    [[ ! $PATH =~ "${HOME}/.pspman/bin" ]] \
-        && echo "export PATH=\"\${PATH}:\${HOME}/.pspman/bin\"" \
-                >> "${HOME}/.bashrc"
+    dir_struct=( "bin" "share" "lib" "lib64" "include" "etc" "tmp" "programs" )
+    if [[ ! $PATH =~ "${HOME}/.local/bin" ]]; then
+        echo "export PATH=\"\${PATH}:\${HOME}/.local/bin\"" >> "${HOME}/.bashrc"
+    fi
+    if [[ ! $PATH =~ "${HOME}/.pspman/bin" ]]; then
+        echo "export PATH=\"\${PATH}:\${HOME}/.pspman/bin\"" >> "${HOME}/.bashrc"
+    fi
     source "${HOME}/.bashrc"
     mkdir -p "${HOME}/.pspman"
-    for workdir in bin share lib lib64 include etc tmp programs; do
+    for workdir in dir_struct; do
         mkdir -p "${HOME}/.pspman/${workdir}"
     done
 }
@@ -52,9 +53,10 @@ function get_pspman() {
 
 function install() {
     add_to_path
-    ! test $(command -v python) \
-        && echo "Please install python3 first" \
-        && exit 1
+    if ! test $(command -v python); then
+        echo "Please install python3 first"
+        exit 1
+    fi
     get_pip
     get_pspman
     echo "Updating Pspman"
@@ -62,7 +64,8 @@ function install() {
 }
 
 function restore_path() {
-    sed -i -e "s|^export PATH=\"\${PATH}:\${HOME}/.pspman/bin\"||" "${HOME}/.bashrc"
+    sed -i -e "s|^export PATH=\"\${PATH}:\${HOME}/.pspman/bin\"||" \
+        "${HOME}/.bashrc"
 }
 
 function del_pspman() {
@@ -71,6 +74,7 @@ function del_pspman() {
 
 function uninstall() {
     restore_path
+    del_pspman
 }
 
 case "$1" in

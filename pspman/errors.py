@@ -18,22 +18,21 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-PSPMAN
-
-'''
-
-# Configure DEFAULT_PRINT
-from psprint import DEFAULT_PRINT
-DEFAULT_PRINT.switches['pad'] = True
-DEFAULT_PRINT.print_kwargs['flush'] = True
-DEFAULT_PRINT.switches['short'] = False
-print = DEFAULT_PRINT.psprint
-'''
-Customized psprint function
-
+Exceptions, Warnings, Errors
 '''
 
 
-from .command_line import call
-__all__ = ['call']
-__version__ = '21.2.23'
+class TagError(Exception):
+    '''
+    Error in tagging a git for type of modification (pull, install, etc)
+
+    Args:
+        old_tag: existing tag
+        operate: operation intended
+
+    '''
+
+    def __init__(self, old_tag: int, operate: str) -> None:
+        super().__init__(f'''
+        Tag '{old_tag}' can't be operated by '{operate}'
+        ''')
