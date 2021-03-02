@@ -26,10 +26,8 @@ Environment Classes
 import os
 import sys
 import typing
-import pathlib
 from datetime import datetime
 import shutil
-from .database import DirDB
 from .tools import timeout
 from .tag import ActionTag
 from .shell import process_comm
@@ -39,154 +37,6 @@ from .errors import TagError
 from . import print
 
 
-class GitProject():
-    '''
-    Git project object.
-
-    Args:
-        data: Load data from ``data`` object __dict__
-        url: url for git remote
-        name: name of project folder
-        tag: action tagged to project
-
-    Attributes:
-        url: url for git remote
-        name: name of project folder
-        path: path of this project
-        tag: action tagged to project
-        updated: last updated on datetime
-
-    '''
-    def __init__(self,
-                 data: dict = None,
-                 url: str = None,
-                 name: str = None,
-                 tag: typing.Union(int, ActionTag) = 0) -> None:
-        self.updated = None
-        self._name = name
-        self.url = url
-        if isinstance(tag, ActionTag):
-            self.a_tag: ActionTag = tag
-        else:
-            self.a_tag = ActionTag(tag)
-        self.__dict__ = {**self.__dict__, **data}
-
-    @property
-    def name(self):
-        '''
-        Extract ``name`` from url
-        '''
-        if self._name:
-            return self._name
-        if self.url != None:
-            self._name =\
-                os.path.splitext(url.replace(":", "/").split("/")[-1])[0]
-            return self._name
-        # This is dangerous, isn't it?
-        return None
-
-    @name.setter
-    def name(self, name):
-        '''
-        Hard-set name
-        '''
-        self._name = name
-
-    def install_type(self) -> int:
-        if any(self.path.joinpath(make_sign).exists() for
-               make_sign in ("Makefile", "configure")):
-            self.a_tag.make()
-        elif any(self.path.joinpath(pip_sign).exists() for
-                 pip_sign in ("setup.py", "setup.cfg")):
-            self.a_tag.pip()
-        elif self.path.joinpath("meson.build").exists():
-            self.a_tag.meson()
-        elif self.path.joinpath("main.go").exists():
-            self.a_tag.goin()
-        else:
-            self.a_tag
-        return self.a_tag.tag // 0x10
-
-    def __repr__(self) -> str:
-        '''
-        representation of GitProject object
-        '''
-        return f'''
-        *** {self.name} ***
-        Last Updated: {self.updated}
-        Source: {self.url}
-        Base tag: {self.tag}
-        '''
-
-    def __str__(self) -> str:
-        '''
-        Print object name
-
-        '''
-        return self.name
-
-    def clone(self) -> bool:
-        '''
-        Get (clone) the remote url
-
-        Returns:
-            ``False`` if cloning failed, else, ``True``
-
-        '''
-        success = process_comm('git', "-C", self.path, 'clone', url, name,
-                               fail_handle='report')
-        if success is None:
-            print(f'Cloning source of {self.name} failed', mark='err')
-            return False
-        self.tag.try_install()
-        return True
-
-    def update(self) -> bool:
-        '''
-        Update (pull) source code.
-        Success means (Update successful or code is up-to-date)
-
-        Returns:
-            ``False`` if update failed, else, ``True``
-
-        '''
-        g_pull = process_comm("git", '-C', self.path, "pull",
-                              "--recurse-submodules", fail_handle='ignore')
-        if g_pull and "Already up to date" not in g_pull:
-            if any(mark in g_pull for mark in ("+", "-")):
-                self.tag.try_install()
-                print(f"Updated source code of {self}", mark=3)
-            else:
-                print(f"Failed updating source code of {self}", mark=4)
-                return False
-        return True
-
-    def install(self) -> bool:
-        '''
-        Install (update) from source code.
-
-        Returns:
-            ``False`` if installation failed, else, ``True``
-
-        '''
-        install_call: typing.Callable = {
-            1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
-        }.get(self.a_tag, lambda **_: True)
-        return install_call(clone_path=self.path, prefix=self.env.prefix)
-
-    def delete(self) -> bool:
-        '''
-        Delete this project
-
-        '''
-        print(f"Deleting {self}", mark=1)
-        print("I can't guess which files were installed.", mark=1)
-        print("So, leaving those scars behind...", mark=0)
-        print("This project may be added again using:", mark=0)
-        print(f"pspman -i {self.url}", mark=0)
-        shutil.rmtree(self.path)
-
-
 class  InstallEnv():
     '''
     Installation Environment
@@ -194,23 +44,21 @@ class  InstallEnv():
     Args:
         clone_dir: Directory in which gits are cloned and maintained
         prefix: Directory in which "bin", "share", "lib" are stored
-        choices: Choices availed by user {only-pull:, force_risk:, stale:}
+        choices: Choices availed by user {only_pull:, force_risk:, stale:}
 
     Attributes:
         clone_dir: Path of clone_dir
         prefix: Path to prefix
 
     '''
-    def __init__(self, clone_dir: typing.Union[pathlib.Path, str],
-                 prefix: typing.Union[pathlib.Path, str] = None,
+    def __init__(self, clone_dir: str, prefix: str = None,
                  choices: dict = None) -> None:
         # options
-        self.clone_dir: pathlib.Path = pathlib.Path(clone_dir).resolve()
-        self.prefix = pathlib.Path(prefix).resolve()
-        self.pkg_install = pkg_install or []
-        self.pkg_delete = pkg_delete or []
-        self.choices = choices or {"only_pull": False,
-                                   "force_risk": False,
+        self.clone_dir = os.path.realpath(clone_dir)
+        if prefix is None:
+            prefix = clone_dir
+        self.prefix = os.path.realpath(prefix)
+        self.choices = choices or {"only_pull": False, "force_risk": False,
                                    "stale": False}
 
         # initializations
@@ -247,7 +95,7 @@ class  InstallEnv():
             self.perm_pass(self.prefix)
 
     @staticmethod
-    def perm_pass(permdir: str) -> None:
+    def perm_pass(permdir: str) -> bool:
         '''
         Args:
             permdir: directory whose permissions are to be checked
@@ -286,3 +134,181 @@ class  InstallEnv():
         print("Bye", mark=0)
         sys.exit(1)
         return False
+
+
+class GitProject():
+    '''
+    Git project object.
+
+    Args:
+        url: url for git remote
+        name: name of project folder
+        **kwargs: hard set
+
+            * tag: override with custom tag
+            * data: load data
+
+    Attributes:
+        url: url for git remote
+        path: path of this project
+        tag: action tagged to project
+        updated: last updated on datetime
+
+    '''
+    def __init__(self,
+                 env: InstallEnv,
+                 url: str = None,
+                 name: str = None,
+                 **kwargs) -> None:
+        self.env = env
+        self.updated = None
+        self._name = name
+        self.url = url
+        if 'tag' in kwargs:
+            tag = kwargs['tag']
+            if isinstance(tag, ActionTag):
+                self.a_tag: ActionTag = tag
+            else:
+                self.a_tag = ActionTag(tag)
+        else:
+            self.a_tag = ActionTag(0)
+        if 'data' in kwargs:
+            data = kwargs['data']
+            if data is not None:
+                self.merge(data)
+
+    def merge(self, data: typing.Dict[str, object]):
+        '''
+        Update values that are ``None`` or `false` type using data
+        '''
+        for key, val in data.items():
+            self.__dict__[key] = self.__dict__.get(key) or val
+
+    @property
+    def path(self):
+        return os.path.join(self.env.clone_dir, self.name)
+
+    @property
+    def name(self):
+        '''
+        name of project folder
+        '''
+        if self._name:
+            return self._name
+        if self.url is None:
+            # This is dangerous, isn't it?
+            return None
+        self._name =\
+            os.path.splitext(self.url.replace(":", "/").split("/")[-1])[0]
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        '''
+        :noindex:
+
+        Hard-set name
+        '''
+        self._name = name
+
+    def type_install(self) -> int:
+        if any(os.path.exists(os.path.join(self.path, make_sign)) for
+               make_sign in ("Makefile", "configure")):
+            self.a_tag.make()
+        elif any(os.path.exists(os.path.join(self.path, pip_sign)) for
+                 pip_sign in ("setup.py", "setup.cfg")):
+            self.a_tag.pip()
+        elif os.path.exists(os.path.join(self.path, "meson.build")):
+            self.a_tag.meson()
+        elif os.path.exists(os.path.join(self.path, "main.go")):
+            self.a_tag.goin()
+        else:
+            self.a_tag
+        return self.a_tag.tag // 0x10
+
+    def __repr__(self) -> str:
+        '''
+        representation of GitProject object
+        '''
+        return f'''
+        *** {self.name} ***
+        Last Updated: {self.updated}
+        Source: {self.url}
+        Base tag: {self.a_tag}
+        '''
+
+    def __str__(self) -> str:
+        '''
+        Print object name
+
+        '''
+        return self.name
+
+    def clone(self) -> bool:
+        '''
+        Get (clone) the remote url
+
+        Returns:
+            ``False`` if cloning failed, else, ``True``
+
+        '''
+        if self.url is None:
+            # clone url is unknown!
+            return False
+        success = process_comm('git', "-C", self.path, 'clone',
+                               self.url, self.name, fail_handle='report')
+        if success is None:
+            print(f'Cloning source of {self.name} failed', mark='err')
+            return False
+        self.a_tag.try_install()
+        return True
+
+    def update(self) -> bool:
+        '''
+        Update (pull) source code.
+        Success means (Update successful or code is up-to-date)
+
+        Returns:
+            ``False`` if update failed, else, ``True``
+
+        '''
+        print(f'updating code for {self.path}', mark='info')
+        g_pull = process_comm("git", '-C', self.path, "pull",
+                              "--recurse-submodules", fail_handle='ignore')
+        if g_pull and "Already up to date" not in g_pull:
+            if "Updating " in g_pull:
+                self.a_tag.try_install()
+                print(f"Updated source code of {self}", mark=3)
+            else:
+                print(f"Failed updating source code of {self}", mark=4)
+                return False
+        return True
+
+    def install(self) -> bool:
+        '''
+        Install (update) from source code.
+
+        Returns:
+            ``False`` if installation failed, else, ``True``
+
+        '''
+        self.type_install()
+        print(f'tag: {self.a_tag.tag}', mark='bug')
+        install_call: typing.Callable = {
+            1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
+        }.get(int(self.a_tag.tag//0x10), lambda **_: True)
+        if self.a_tag.tag & 0x04:
+            return install_call(code_path=self.path, prefix=self.env.prefix)
+        return True
+
+    def delete(self) -> None:
+        '''
+        Delete this project
+
+        '''
+        print(f"Deleting {self}", mark=1)
+        print("I can't guess which files were installed.", mark=1)
+        print("So, leaving those scars behind...", mark=0)
+        print("This project may be added again using:", mark=0)
+        print(f"pspman -i {self.url}", mark=0)
+        shutil.rmtree(self.path)

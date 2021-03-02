@@ -22,10 +22,8 @@ setup script
 '''
 
 
-from os import environ, makedirs
-from os import sep as ossep
+import os
 from shutil import copy
-from pathlib import Path
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -45,16 +43,18 @@ def mandb() -> None:
     '''
     copy man.db to ${HOME}/.local/share/man/man1/.
     '''
-    man_dest = Path(environ["HOME"], '.local', 'share', 'man', 'man1')
-    makedirs(man_dest, exist_ok=True)
+    man_dest = os.path.join(os.environ["HOME"],
+                            '.local', 'share', 'man', 'man1')
+    os.makedirs(man_dest, exist_ok=True)
     copy("pspman.1", man_dest)
-    myhome = Path(environ["HOME"], ".pspman")
-    makedirs(myhome, exist_ok=True)
+    myhome = os.path.join(os.environ["HOME"], ".pspman")
+    os.makedirs(myhome, exist_ok=True)
     for workdir in ("bin", "share", "lib", "lib64",
                     "etc", "include", "tmp", "programs"):
-        makedirs(myhome.joinpath(workdir), exist_ok=True)
-    if "pspman" not in environ["PATH"]:
-        with open(environ["HOME"] + ossep + ".bashrc", "a") as bash_f_h:
+        os.makedirs(os.path.join(myhome, workdir), exist_ok=True)
+    if "pspman" not in os.environ["PATH"]:
+        with open(os.path.join(os.environ["HOME"],
+                               ".bashrc"), "a") as bash_f_h:
             print('export PATH="${PATH}:${HOME}/.pspman/bin"', file=bash_f_h)
 
 

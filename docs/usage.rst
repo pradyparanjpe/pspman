@@ -32,8 +32,8 @@ OPTIONS
 
 View usage and help message
 
--c, –-clonedir DIR
-~~~~~~~~~~~~~~~~~~
+-c, –-clone-dir DIR
+~~~~~~~~~~~~~~~~~~~
 
 Path for all git clones [default:${HOME}/programs]
 

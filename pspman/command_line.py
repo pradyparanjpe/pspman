@@ -27,13 +27,11 @@ import typing
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import argcomplete
 from .classes import InstallEnv
-from .project_actions import (del_proj, list_proj, git_pulls,
-                              find_gits, add_git)
-from .installations import auto_install, report_failures
+from .project_actions import CurrentActions
 from . import print
 
 
-def cli() -> typing.Dict[str, object]:
+def cli() -> typing.Dict[str, typing.Any]:
     '''
     Parse command line arguments
     '''
@@ -45,29 +43,51 @@ def cli() -> typing.Dict[str, object]:
     homedir = os.environ["HOME"]
     parser = ArgumentParser(description=description,
                             formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('-f', '--force-root', action='store_true',
-                        help='force working with root permissions [DANGEROUS]')
-    parser.add_argument('-s', '--stale', action='store_true',
-                        help='skip updates, let the repository remain stale')
-    parser.add_argument('-l', '--list-projs', action='store_true',
-                        help='display list of installed repositories and exit')
-    parser.add_argument('-o', '--only-pull', action='store_true',
-                        help='only pull, do not try to install')
+    sub_parsers = parser.add_subparsers()
+    list_gits = sub_parsers.add_parser('list', aliases=['info'])
+    list_gits.set_defaults(call_function='list')
+    # add_gits = sub_parsers.add_parser('add', aliases=['install'])
+    # del_gits = sub_parsers.add_parser('delete', aliases=['remove','uninstall'])
     parser.add_argument('-c', '--clone-dir', type=str, nargs="?",
                         default=f'{homedir}/.pspman/programs',
                         help='path for all git clones')
     parser.add_argument('-p', '--prefix', type=str, nargs="?",
                         default=f'{homedir}/.pspman',
                         help='path for installation')
-    parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
-                        nargs="*", help='URL to clone new project', default=[])
-    parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
-                        nargs="*", help='PROJ to clone new project',
-                        default=[])
+    parser.add_argument('-l', '--list-projs', action='store_true',
+                        help='display list of installed repositories and exit')
+    parser.add_argument('-s', '--stale', action='store_true',
+                        help='skip updates, let the repository remain stale')
+    parser.add_argument('-o', '--only-pull', action='store_true',
+                        help='only pull, do not try to install')
+    parser.add_argument('-f', '--force-risk', action='store_true',
+                        help='force working with root permissions [DANGEROUS]')
+    # parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
+                        # nargs="*", help='URL to clone new project', default=[])
+    # parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
+                        # nargs="*", help='PROJ to clone new project',
+                        # default=[])
     argcomplete.autocomplete(parser)
     args = vars(parser.parse_args())
+
+    # Pack choices
+    choices = {
+        'stale': args.get('stale', False),
+        'only_pull': args.get('only_pull', False),
+        'force_risk': args.get('force_risk', False),
+    }
+    del args['stale']
+    del args['only_pull']
+    del args['force_risk']
+    args['choices'] = choices
     return args
 
+
+def list(env: InstallEnv) -> None:
+    '''
+    List all known gits
+
+    '''
 
 def call() -> None:
     '''
@@ -80,27 +100,18 @@ def call() -> None:
 
     '''
     args = cli()
-    pkg_grp = InstallEnv(
-        clonedir=args.get('clone_dir'),
+    action = CurrentActions(
+        clone_dir=args['clone_dir'],
         prefix=args.get('prefix'),
-        pkg_install=args.get("pkg_install", []),
-        pkg_delete=args.get("pkg_delete", ""),
-        stale=args.get('stale', False),
-        force_root=args.get('force_root'),
-        only_pull=args.get('only_pull'),
+        choices=args['choices'],
     )
-    find_gits(pkg_grp)
-    list_proj(
-        env=pkg_grp,
-        display=args.get('list_projs', False),
-        grace_exit=not(
-            not args.get('list_projs') or args.get('only_pull', False)
-            or args.get('pkg_delete', []) or args.get('pkg_install', [])
-        )
-    )
-    del_proj(pkg_grp)
-    git_pulls(pkg_grp)
-    add_git(pkg_grp)
-    if not args.get('only_pull'):
-        auto_install(pkg_grp)
+    sub_call = args.get('call_function')
+    if sub_call is not None:
+        {'list': action.list_project}[sub_call]()
+    else:
+        print('no subfunction called', mark='bug' )
+    action.update_project()
+    print("Trying installations")
+    action.install_project()
+    action.save_db()
     print("done.", mark=1)

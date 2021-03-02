@@ -23,6 +23,7 @@ shell functions
 '''
 
 
+import typing
 import subprocess
 from . import print
 
@@ -37,7 +38,7 @@ class CommandError(Exception):
 
     '''
     def __init__(self, cmd: list, err: str = None) -> None:
-        super(Exception).__init__(self, f'''
+        super().__init__(self, f'''
         Command Passed for execution:
         {cmd}
 
@@ -47,7 +48,7 @@ class CommandError(Exception):
 
 
 def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
-                 fail_handle: bool = 'fail', **kwargs) -> str:
+                 fail_handle: str = 'fail', **kwargs) -> typing.Optional[str]:
     '''
     Generic process definition and communication.
 
@@ -70,12 +71,12 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
     Raises:
         CommandError
     '''
-    cmd = list(cmd)
+    cmd_l = list(cmd)
     if timeout is not None and timeout < 0:
-        process = subprocess.Popen(cmd, **kwargs)  # DONT: *cmd here
+        process = subprocess.Popen(cmd_l, **kwargs)  # DONT: *cmd_l here
         return None
     process = subprocess.Popen(
-        cmd,
+        cmd_l,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -85,7 +86,7 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
     print(stdout, mark='bug')
     if stderr:
         if fail_handle == 'fail':
-            raise CommandError(cmd, stderr)
+            raise CommandError(cmd_l, stderr)
         if fail_handle in ('report', 'nag'):
             if fail_handle == 'nag':
                 print(f"{stderr}", mark=4)
