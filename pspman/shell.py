@@ -83,7 +83,6 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
         **kwargs
     )
     stdout, stderr = process.communicate(timeout=timeout)
-    print(stdout, mark='bug')
     if stderr:
         if fail_handle == 'fail':
             raise CommandError(cmd_l, stderr)
@@ -92,3 +91,39 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
                 print(f"{stderr}", mark=4)
             return None
     return stdout
+
+
+def git_comm(action: str,
+             clone_dir: str,
+             url: str = None,
+             name: str = None) -> typing.Optional[str]:
+    '''
+    Perform a git action
+
+    Args:
+        action: git action to perform
+            * list: list git projects (default)
+            * pull: pull and update
+            * clone: clone a new project (requires ``name``, ``url``)
+
+        clone_dir: directory in which, project is (to be) cloned
+        url: remote url to clone (required for ``action`` == 'clone')
+        name: name (path) of project (required for ``action`` == 'clone')
+
+    Returns:
+        Output from process_comm
+
+    '''
+    cmd: typing.List[str] = ['git', '-C', clone_dir]
+    fail_handle = 'report'
+    if action == 'pull':
+        cmd.extend(('pull', '--recurse-modules'))
+        fail_handle = 'ignore'
+    if action == 'clone':
+        if url is None or name is None:
+            # required
+            return None
+        cmd.extend(('clone', url, name))
+    else:
+        cmd.extend(('remote', '-v'))
+    return process_comm(*cmd, p_name=f'git {action}', fail_handle=fail_handle)

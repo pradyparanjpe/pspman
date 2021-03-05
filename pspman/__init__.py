@@ -22,11 +22,23 @@ PSPMAN
 
 '''
 
+
 # Configure DEFAULT_PRINT
 from psprint import DEFAULT_PRINT
 DEFAULT_PRINT.switches['pad'] = True
 DEFAULT_PRINT.print_kwargs['flush'] = True
 DEFAULT_PRINT.switches['short'] = False
+DEFAULT_PRINT.edit_style(mark='install', pref='INSTALL', pref_s='I',
+                         pref_color='lg', pref_bgcol='k', text_color='g')
+
+DEFAULT_PRINT.edit_style(mark='del', pref='DELETE', pref_s='D',
+                         pref_color='ly', pref_bgcol='k', text_color='y')
+
+DEFAULT_PRINT.edit_style(mark='pull', pref='CODE_UP', pref_s='C',
+                         pref_color='lb', pref_bgcol='k', text_color='b')
+
+DEFAULT_PRINT.edit_style(mark='clone', pref='CLONE', pref_s='a',
+                         pref_color='lc', pref_bgcol='k', text_color='c')
 print = DEFAULT_PRINT.psprint
 '''
 Customized psprint function
@@ -34,6 +46,4 @@ Customized psprint function
 '''
 
 
-from .command_line import call
-__all__ = ['call']
 __version__ = '21.2.23'

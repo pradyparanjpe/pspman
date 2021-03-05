@@ -22,7 +22,13 @@ Exceptions, Warnings, Errors
 '''
 
 
-class TagError(Exception):
+class PSPManError(Exception):
+    '''
+    base error for papman
+    '''
+
+
+class TagError(PSPManError):
     '''
     Error in tagging a git for type of modification (pull, install, etc)
 
@@ -33,6 +39,29 @@ class TagError(Exception):
     '''
 
     def __init__(self, old_tag: int, operate: str) -> None:
-        super().__init__(f'''
+        super(PSPManError, self).__init__(f'''
         Tag '{old_tag}' can't be operated by '{operate}'
+        ''')
+
+
+class ClosedQueueError(PSPManError):
+    '''
+    Operation can't be performed, since the queue has been closed
+
+    Args:
+        queue: PSPQueue: the queue that threw the error
+
+    '''
+    def __init__(self, queue):
+        super(PSPManError, self).__init__('''
+        {type(queue)} Queue is closed
+        ''')
+
+class GitURLError(PSPManError):
+    '''
+    Git URL (and hence or otherwise, name) can't be determined
+    '''
+    def __init__(self):
+        super(PSPManError, self).__init__(f'''
+        Git URL and/name not found/inferred
         ''')

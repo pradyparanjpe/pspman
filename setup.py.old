@@ -29,8 +29,8 @@ from setuptools.command.develop import develop
 from setuptools.command.install import install
 
 
-LONG_DESCRIPTION = ""
-for read_file in ("./LongDescription", "./README.md"):
+LONG_DESCRIPTION = ''
+for read_file in ('./LongDescription', './README.md'):
     try:
         with open(read_file, 'r') as README_FILE:
             LONG_DESCRIPTION = README_FILE.read()
@@ -43,23 +43,23 @@ def mandb() -> None:
     '''
     copy man.db to ${HOME}/.local/share/man/man1/.
     '''
-    man_dest = os.path.join(os.environ["HOME"],
+    man_dest = os.path.join(os.environ['HOME'],
                             '.local', 'share', 'man', 'man1')
     os.makedirs(man_dest, exist_ok=True)
-    copy("pspman.1", man_dest)
-    myhome = os.path.join(os.environ["HOME"], ".pspman")
+    copy('pspman.1', man_dest)
+    myhome = os.path.join(os.environ['HOME'], '.pspman')
     os.makedirs(myhome, exist_ok=True)
-    for workdir in ("bin", "share", "lib", "lib64",
-                    "etc", "include", "tmp", "programs"):
+    for workdir in ('bin', 'share', 'lib', 'lib64',
+                    'etc', 'include', 'tmp', 'programs'):
         os.makedirs(os.path.join(myhome, workdir), exist_ok=True)
-    if "pspman" not in os.environ["PATH"]:
-        with open(os.path.join(os.environ["HOME"],
-                               ".bashrc"), "a") as bash_f_h:
+    if 'pspman' not in os.environ['PATH']:
+        with open(os.path.join(os.environ['HOME'],
+                               '.bashrc'), 'a') as bash_f_h:
             print('export PATH="${PATH}:${HOME}/.pspman/bin"', file=bash_f_h)
 
 
 class PostDevelopCommand(install):
-    """Post-installation for installation mode."""
+    '''Post-installation for installation mode.'''
     def run(self) -> None:
         '''
         run post install
@@ -69,7 +69,7 @@ class PostDevelopCommand(install):
 
 
 class PostInstallCommand(install):
-    """Post-installation for installation mode."""
+    '''Post-installation for installation mode.'''
     def run(self) -> None:
         '''
         run post install
@@ -81,13 +81,13 @@ class PostInstallCommand(install):
 setup(
     name='pspman',
     version='0.0.0.0.dev6',
-    description="Personal Simple Package Manager",
-    license="GPLv3",
+    description='Personal Simple Package Manager',
+    license='GPLv3',
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     author='Pradyumna Paranjape',
     author_email='pradyparanjpe@rediffmail.com',
-    url="https://github.com/pradyparanjpe/pspman.git",
+    url='https://github.com/pradyparanjpe/pspman.git',
     packages=find_packages(),
     install_requires=['psprint'],
     scripts=['bin/pspman', ],

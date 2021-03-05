@@ -23,124 +23,50 @@ Tags
 '''
 
 
-from .errors import TagError
+import typing
 
 
-class ActionTag():
-    '''
-    Coded information about update method.
-    For Bytecode B, B < 8: F - B = Failure Code
+ACTION_TAG: typing.Dict[str, int] = {
+    'info': 0x00,
 
-    Attributes:
-        Tag:
+    'make': 0x10,
+    'pip': 0x20,
+    'meson': 0x30,
+    'go': 0x40,
 
-            * 0x00: Do nothing
-            * 0xFF: Failed at everything
+    'pull': 0x01,
+    'install': 0x02,
+}
+'''
+Action: tag(int) codes
+'''
 
-            * 0x01: List
-            * 0x02: Pull
-            * 0x04: Try install
 
-            * 0x0B: Install Failed
-            * 0x0D: Pull Failed
-            * 0x0E: List Failed
+TAG_ACTION: typing.Dict[int, str] = {
+    0x00: 'info',
 
-            * 0x10: Make
-            * 0x20: Pip
-            * 0x30: Meson/Ninja
-            * 0x40: Go
+    0x10: 'make',
+    0x20: 'pip',
+    0x30: 'meson',
+    0x40: 'go',
 
-            * 0xB0: Go failed
-            * 0xC0: Meson/Ninja failed
-            * 0xD0: Pip failed
-            * 0xE0: Make Failed
+    0x01: 'pull',
+    0x02: 'install',
+}
+'''
+tag: Action (en)codes
+'''
 
-    '''
 
-    def __init__(self, x: int = 0) -> None:
-        self.tag = x
+FAIL_TAG: typing.Dict[int, str] = {
+    (0xf0 - 0x10): 'Make installation failed',
+    (0xf0 - 0x20): 'Pip installation failed',
+    (0xf0 - 0x30): 'Meson installation failed',
+    (0xf0 - 0x40): 'Go installation failed',
 
-    def show_list(self) -> None:
-        '''
-        flag show in list
-        '''
-        self.tag |= 0x01
-
-    def pull(self) -> None:
-        '''
-        flag pull = True
-        '''
-        self.tag |= 0x02
-
-    def try_install(self) -> None:
-        '''
-        flag install try
-        '''
-        self.tag |= 0x04
-
-    def make(self) -> None:
-        '''
-        flag install for make method
-
-        Raises:
-            TagError: already tagged
-
-        '''
-        if (0x0 < self.tag//0x10 < 0x5):
-            if not self.tag & 0x10:
-                # already tagged
-                raise TagError(self.tag, 'make')
-        else:
-            self.tag |= 0x10
-
-    def pip(self) -> None:
-        '''
-        flag install for pip
-
-        Raises:
-            TagError: already tagged
-
-        '''
-        if (0x0 < self.tag//0x10 < 0x5):
-            if not self.tag & 0x20:
-                # already tagged
-                raise TagError(self.tag, 'pip')
-        else:
-            self.tag |= 0x20
-
-    def meson(self) -> None:
-        '''
-        flag install for meson
-
-        Raises:
-            TagError: already tagged
-
-        '''
-        if (0x0 < self.tag//0x10 < 0x5):
-            if not self.tag & 0x30:
-                # already tagged
-                raise TagError(self.tag, 'meson')
-        else:
-            self.tag |= 0x30
-
-    def goin(self) -> None:
-        '''
-        flag install for go
-
-        Raises:
-            TagError: already tagged
-
-        '''
-        if (0x0 < self.tag//0x10 < 0x5):
-            if not self.tag & 0x40:
-                # already tagged
-                raise TagError(self.tag, 'go')
-        else:
-            self.tag |= 0x40
-
-    def err(self) -> None:
-        '''
-        Invert flags due to error
-
-        '''
-        self.tag = 0xff - self.tag
+    (0x0f - 0x01): 'Code-update failed',
+    (0x0f - 0x02): 'Installation failed',
+}
+'''
+tag(ing): Action-failure codes
+'''

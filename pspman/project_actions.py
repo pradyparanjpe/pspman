@@ -24,14 +24,14 @@ Actions on projects, other than automated installations
 
 
 import os
-import sys
 import typing
 import re
 import yaml
 from . import print
-from .classes import InstallEnv, GitProject
-from .tag import ActionTag
-from .shell import process_comm
+from .queues import (PSPQueue, SuccessQueue, FailQueue, DeleteQueue,
+                     PullQueue, CloneQueue, InstallQueue)
+from .classes import InstallEnv, GitProject, PSPManDB
+from .shell import git_comm
 
 
 class CurrentActions:
@@ -41,6 +41,7 @@ class CurrentActions:
     Attributes:
         git_projects: git projects to handle
         env: environment
+        choices: optional choices
 
     Args:
         clone_dir: Clone directory
@@ -50,77 +51,100 @@ class CurrentActions:
     '''
     def __init__(self, clone_dir: str, prefix: str = None,
                  choices: typing.Dict[str, bool] = None):
+        self.choices = choices or {}
         self.env: InstallEnv = InstallEnv(clone_dir=clone_dir, prefix=prefix,
                                           choices=choices)
         self.git_projects: typing.Dict[str, GitProject] = {}
-        self._load_db()
         self._find_gits()
+        self.git_projects
 
-    def _load_db(self) -> None:
-        '''
-        Find database file (yml) and load its contents
-        '''
-        db_path = os.path.join(self.env.clone_dir, '.psp_db.yml')
-        if not os.path.isfile(db_path):
-            return
-        print(f'reading from database {db_path}', mark='bug')
-        with open(db_path, 'r') as db_handle:
-            db = yaml.load(db_handle, Loader=yaml.Loader)
+        # Queues
+        self.queues: typing.Dict[str, PSPQueue] = {}
 
-        # Load Git Projects
-        for name, gp_data in db.get('git_projects', {}).items():
-            self.git_projects[name] = GitProject(data=gp_data, env=self.env)
-
-    def save_db(self) -> None:
+    def _init_queues(self):
         '''
-        Save current information as yaml database file
+        initiate queues
         '''
-        # Human readable is more transparent than easily decodable encoding
-        db_path = os.path.join(self.env.clone_dir, '.psp_db.yml')
-        if os.path.isfile(db_path):
-            # old database file does exist
-            # Copy a backup
-            # Older backup (if it exists) is erased
-            os.rename(db_path, db_path + ".bak")
-        gp_data = {}
-        # dump git projects' data attributes
-        for name, project in self.git_projects.items():
-            gp_data[name] = project.__dict__
-        print(f'Saving database to {db_path}', mark='bug')
-        with open(db_path, "w") as db_handle:
-            yaml.dump({'git_projects': gp_data}, db_handle)
+        self.queues['success'] = SuccessQueue(env=self.env)
+        self.queues['fail'] = FailQueue(env=self.env)
+        self.queues['install'] = self.queues['success'] \
+            if self.choices.get('only_pull', False)\
+               else InstallQueue(env=self.env,
+                                 success=self.queues['success'],
+                                 fail=self.queues['fail'])
 
     def _find_gits(self) -> None:
         '''
-        Locate git projects in current ``env``
-        `Under`rides database
+        Locate git projects in current ``env`` (parse)
+        Load database (overrides parser)
 
         Returns:
             all project names found in ``env``
+
         '''
         # discover projects
         discovered_projects: typing.Dict[str, GitProject] = {}
+        read_db = PSPManDB(env=self.env)
+        read_db.load_db()
         for leaf in os.listdir(self.env.clone_dir):
             if not os.path.isdir(os.path.join(self.env.clone_dir, leaf)):
                 continue
             if not os.path.isdir(os.path.join(self.env.clone_dir,
-                                              leaf, ".git")):
+                                              leaf, '.git')):
                 continue
             if leaf in self.git_projects:
                 continue
             pkg_path = os.path.join(self.env.clone_dir, leaf)
-            g_url = process_comm('git', "-C", f"{str(pkg_path)}",
-                                 'remote', '-v', fail_handle='report')
+            g_url = git_comm('list', pkg_path)
             if g_url is None:
                 # failed
                 continue
             fetch: typing.List[str] = re.findall(r"^.*fetch.*", g_url)
-            url = fetch[0].split(" ")[-2].split("\t")[-1].rstrip("/")
-            discovered_projects[leaf] = GitProject(url=url, name=leaf,
-                                                   env=self.env)
-        self.git_projects = {**discovered_projects, **self.git_projects}
+            url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
+            discovered_projects[leaf] = GitProject(url=url, name=leaf)
+            discovered_projects[leaf].type_install(env=self.env)
+        self.git_projects = {**discovered_projects, **read_db.git_projects}
 
-    def add_project(self, to_add_list: typing.List[str]) -> None:
+    def list_projects(self):
+        '''
+        List all available projects
+
+        '''
+        print(f'projects in {self.env.clone_dir}', end="\n\n", mark='info')
+        for project_name, project in self.git_projects.items():
+            if self.choices.get('verbose', False):
+                print(repr(project), mark='list')
+            else:
+                if project.url is None:
+                    print(f"{project_name}:\tSource URL Unavailable",
+                          mark='warn')
+                else:
+                    print(f"{project_name}:\t{project.url}", mark='list')
+
+    def del_projects(self, del_list: typing.List[str]) -> None:
+        '''
+        Delete given project
+
+        Args:
+            del_list: list of names of project directories to be removed
+
+        '''
+        if 'success' not in self.queues:
+            self._init_queues()
+        self.queues['delete'] = DeleteQueue(env=self.env,
+                                            success=self.queues['success'],
+                                            fail=self.queues['fail'])
+        for project_name in del_list:
+            if project_name not in self.git_projects:
+                print(f"Couldn't find {project_name} in {self.env.clone_dir}",
+                      mark=3)
+                print('Ignoring...', mark=0)
+                continue
+            project = self.git_projects[project_name]
+            self.queues['delete'].add(project)
+        self.queues['delete'].done()
+
+    def add_projects(self, to_add_list: typing.List[str]) -> None:
         '''
         Add a project with given url
 
@@ -128,76 +152,38 @@ class CurrentActions:
             to_add_list: urls of projects to be added
 
         '''
-        failed_additions = 0
+        if 'success' not in self.queues:
+            self._init_queues()
+        self.queues['clone'] = CloneQueue(env=self.env,
+                                          success=self.queues['install'],
+                                          fail=self.queues['fail'])
+
         for url in to_add_list:
-            new_project = GitProject(url=url, env=self.env)
+            new_project = GitProject(url=url)
             if os.path.isfile(os.path.join(self.env.clone_dir,
                                            new_project.name)):
                 # name is a file, use .d directory
-                print(f"A file named '{new_project}' already exists",
-                      mark=3)
-                new_project.name += ".d"
+                print(f"A file named '{new_project}' already exists", mark=3)
+                new_project.name += '.d'
                 print(f"Calling this project '{new_project}'", mark=3)
             if self.git_projects.get(str(new_project)):
                 # url leaf has been cloned already
                 print(f"{new_project} appears to be installed already", mark=3)
-                print(f"I won't overwrite", mark=0)
+                print("I won't overwrite", mark=0)
                 continue
-            if not new_project.clone():
-                failed_additions += 1
-                new_project.delete()
-                continue
-            if not new_project.install():
-                failed_additions += 1
-                new_project.delete()
-                continue
-            self.git_projects[new_project.name] = new_project
+            self.queues['clone'].add(new_project)
+        self.queues['clone'].done()
 
-    def del_project(self, del_list: typing.List[str]) -> None:
-        '''
-        Delete given project
-
-        Args:
-            del_list: list of names of project directories to be removed
-        '''
-        for project_name in del_list:
-            if not project_name in self.git_projects:
-                print(f"Couldn't find {project_name} in {self.env.clone_dir}",
-                      mark=3)
-                print("Ignoring...", mark=0)
-                continue
-            project = self.git_projects[project_name]
-            project.delete()
-
-    def list_project(self):
-        '''
-        List all available projects
-
-        '''
-        print(f'projects in {self.env.clone_dir}', mark="info")
-        for project_name, project in self.git_projects.items():
-            if project.url is None:
-                print(f"{project_name}: Source URL Unavailable", mark='warn')
-            else:
-                print(f"{project_name}: {project.url}", mark='list')
-
-    def update_project(self) -> int:
+    def update_projects(self) -> None:
         '''
         Trigger update for all projects
 
         '''
-        failed_updates = 0
+        if 'success' not in self.queues:
+            self._init_queues()
+        self.queues['pull'] = PullQueue(env=self.env,
+                                        success=self.queues['install'],
+                                        fail=self.queues['fail'])
         for project_name, project in self.git_projects.items():
-            failed_updates += int(not(project.update()))
-        return failed_updates
-
-    def install_project(self) -> int:
-        '''
-        Trigger install for all projects
-
-        '''
-        failed_installations = 0
-        for project_name, project in self.git_projects.items():
-            print(f'Installing {project_name}')
-            failed_installations += int(not(project.install()))
-        return failed_installations
+            self.queues['pull'].add(project)
+        self.queues['pull'].done()

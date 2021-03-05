@@ -22,8 +22,8 @@ python module call
 '''
 
 
-from . import call
+from .command_line import call
 
 
-if __name__ in "__main__" or "pspman.__main__":
+if __name__ in '__main__' or 'pspman.__main__':
     call()

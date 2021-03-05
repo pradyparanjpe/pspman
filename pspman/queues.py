@@ -23,57 +23,311 @@ Command Queues
 '''
 
 
+import os
+import sys
 import typing
+import multiprocessing
+import time
+import string
+import socket
+import threading
+import random
+import tempfile
+import json
+from .classes import GitProject, InstallEnv, GitProjectListEncoder
+from .actions import delete, clone, update, install, success, failure
+from .errors import ClosedQueueError
+from .tag import TAG_ACTION
+from . import print
 
 
 class PSPQueue:
     '''
     Base FIFO Queue object to push and retrieve tasks
+
+    Attributes:
+        queue: queued ``GitProjects``
+        downstream_qs: upstream queues feeding to this queue
+            * success: successful projects are pushed here
+            * fail: failed projects are pushed here
+        upstream_qs: upstream queues feeding to this queue
+        q_type: type of queue
+        pid: pid of child process
+
+    Args:
+        action: procedure to perform on each ``GitProject`` in the queue
+        items:
+        success_q: push to this queue, if action succeeds
+        fail_q: push to this queue, if action fails
+        **kwargs:
+            * no-parallel: bool: True if single thread is to be used
+            * items: Optional[Dict[str, GitProject]]: initialize with items
+            * q_type: type of queue
+
     '''
-    def __init__(self):
-        self.queue: typing.List[object] = []
+    def __init__(self, action: typing.Callable,
+                 env: InstallEnv,
+                 fail_q: 'PSPQueue' = None,  # type: ignore
+                 **kwargs):
+        self._running = False
+        if kwargs.get('parallel') is not None:
+            self._parallel = len(os.sched_getaffinity(0))
+        else:
+            self._parallel = 1
+        self.upstream_qs: typing.List['PSPQueue'] = []  # type: ignore
+        self.downstream_qs = {'success': kwargs.get('success'),
+                              'fail': kwargs.get('fail')}
+        for ds_q in self.downstream_qs.values():
+            if ds_q is not None:
+                ds_q.upstream_qs.append(self)
+        self.action = action
+        self.env = env
+        if kwargs.get('items') is None:
+            self.queue: typing.Dict[str, GitProject] = {}
+        else:
+            self.queue = kwargs['items'].copy()
+        self.q_type: str = kwargs.get('q_type', 'base')
+        self._server, self._client = self._create_sockets()
+        self._client.settimeout(10)
+        self._server.settimeout(10)
+        self.pid = self.start()
 
-    def next(self) -> object:
+    def _create_sockets(self) -> typing.Tuple[socket.socket, socket.socket]:
         '''
-        Pop out 0th object reference in queue
+        Parent: Create sockets
+        '''
+        name = ''.join(random.choices(
+            string.ascii_uppercase + string.digits, k=10
+        ))
+        name = os.path.join(tempfile.gettempdir(), name +
+                            f"_{self.q_type}_pspman.sock")
+        # Child serves, parent process is the client
+        server = socket.socket(family=socket.AF_UNIX, type=socket.SOCK_STREAM)
+        server.bind(name)
+        server.listen()
+        client = socket.socket(family=socket.AF_UNIX, type=socket.SOCK_STREAM)
+        client.connect(name)
+        return server, client
 
-        Raises:
-            IndexError: No more objects in queue
+    def add(self, project: GitProject) -> None:
         '''
-        return self.queue.pop(0)
+        Parent: Add project to queue at the end
 
-    def add(self, obj_ref) -> None:
+        Args:
+            project: project to queue
+
         '''
-        Add obj_ref to queue at the end
-        '''
-        self.queue.append(obj_ref)
+        if not self._client._closed:  # type: ignore
+            # send this to child
+            self.copy_to_server(project)
+        else:
+            raise ClosedQueueError(self)
 
     def __len__(self) -> int:
         '''
-        length of ojects in the queue
+        Parent/child: length of ojects in the queue
+
         '''
         return len(self.queue)
 
-    def __iter__(self) -> typing.Iterable:
+    def run_batch(self) -> None:
         '''
-        An iterable object
+        Child: Execute threads that run ``action`` on all items in the queue
+
         '''
-        return self.queue.__iter__()
+        if not len(self.queue):
+            return
+        self._running = True
+        while len(self.queue):
+            with multiprocessing.Pool(self._parallel) as pool:
+                results = list(
+                    pool.map_async(
+                        self.action,
+                        ((project, self.env)
+                         for project in self.queue.values())
+                    ).get()
+                )
+            for res in results:
+                project = self.queue[res[0]]
+                del self.queue[res[0]]
+                if res[-1]:
+                    if self.downstream_qs['success'] is not None:
+                        self.downstream_qs['success'].add(project)
+                else:
+                    if self.downstream_qs['fail'] is not None:
+                        self.downstream_qs['fail'].add(project)
+                print(res[1], mark=TAG_ACTION[project.tag&0x01])
+
+        self._running = False
+
+    def done(self, caller: 'PSPQueue' = None) -> None:  # type: ignore
+        '''
+        Parent: No more items will be added.
+        Finish current list and exit
+
+        '''
+
+        if caller is not None:
+            self.upstream_qs.pop(self.upstream_qs.index(caller))
+            if len(self.upstream_qs) != 0:
+                return
+        self._client.send((0).to_bytes(length=64, byteorder='big'))
+
+    def start(self) -> int:
+        '''
+        Parent: Start a batch run
+
+        '''
+        pid = os.fork()
+        if pid == 0:
+            # child server
+            pipe, _ = self._server.accept()
+            while not self._server._closed:  # type: ignore
+                # socket is not closed
+                if self._running:
+                    # Wait for job to complete
+                    print('Server child is running...', mark='bug')
+                    time.sleep(10)
+                else:
+                    # Action is not running
+                    self.handle_conn(pipe)
+                    # Batch run, ready to receive next signal
+            else:
+                # final pass
+                self.run_batch()
+                if self.downstream_qs['success'] is not None:
+                        self.downstream_qs['success'].done(self)
+                if self.downstream_qs['fail'] is not None:
+                        self.downstream_qs['fail'].done(self)
+                sys.exit(0)
+        else:
+            # parent client
+            return pid
+
+    def handle_conn(self, pipe: socket.socket) -> None:
+        '''
+        Child: handle each parent connection
+        '''
+        close = self.copy_from_client(pipe)
+        self.run_batch()
+        if close and not self._server._closed:  # type: ignore
+            self._server.close()
+
+    def copy_from_client(self, pipe: socket.socket) -> bool:
+        '''
+        Child: copy parent's queue
+
+        Returns:
+            ``True`` if 'close' instruction is received
+
+        '''
+        try:
+            size_in_bytes = pipe.recv(64)
+            chunk = int.from_bytes(bytes=size_in_bytes, byteorder='big')
+            if chunk == 0:
+                # input closed
+                return True
+            self.queue = {name: GitProject(data=project_data)
+                          for name, project_data in
+                          json.loads(pipe.recv(chunk).decode('utf-8')).items()}
+        except socket.timeout:
+            print('Client parent did\'t respond...', mark='bug')
+            time.sleep(10)
+        return False
+
+    def copy_to_server(self, project: GitProject = None):
+        '''
+        Parent: copy to child's queue
+
+        '''
+        # FAIL: All getting pushed, and only first is received
+        if project:
+            self.queue[project.name] = project
+        try:
+            to_yml = json.dumps(
+                self.queue,
+                cls=GitProjectListEncoder
+            ).encode('utf-8')
+            self._client.send(len(to_yml).to_bytes(length=64, byteorder='big'))
+            self._client.send(to_yml)
+            self.queue = {}
+        except socket.timeout:
+            print('Server child did\'t respond...', mark='info')
+
+    def __repr__(self) ->str:
+        '''
+        Representation of queue
+
+        '''
+        represent: typing.List[str] = [f'Queue: {self.q_type}']
+        represent.append(
+            f"Queue-success: {self.downstream_qs['success'].q_type}"
+            if self.downstream_qs['success'] is not None
+            else 'Queue-success: ``None``'
+        )
+        represent.append(f"Queue-fail: {self.downstream_qs['fail'].q_type}"
+                         if self.downstream_qs['fail'] is not None
+                         else 'Queue-fail: ``None``')
+        represent.append("Upstream feeds:")
+        for up_q in self.upstream_qs:
+            represent.append(f"\t{up_q.q_type}")
+        represent.append(f'contents: {len(self)} items')
+        return '\n'.join(represent)
 
 
-class PullQueue(PSPQueue):
+class FailQueue(PSPQueue):
+
     '''
-    Queue of source codes to pull
+    Queue to reguster Successful objects
     '''
+    def __init__(self, **kwargs):
+        super().__init__(action=failure, q_type='fail', **kwargs)
+
+
+class SuccessQueue(PSPQueue):
+
+    '''
+    Queue to reguster Successful objects
+    '''
+    def __init__(self, **kwargs):
+        super().__init__(action=success, q_type='success', **kwargs)
+
+
+class DeleteQueue(PSPQueue):
+    '''
+    Queue for projects to delete
+    '''
+    def __init__(self, env: InstallEnv,
+                 success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=delete, env=env, q_type='delete',
+                         success=success, fail=fail, **kwargs)
 
 
 class InstallQueue(PSPQueue):
     '''
     Queue of projects to install
     '''
+    def __init__(self, env: InstallEnv,
+                 success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=install, env=env, q_type='install',
+                         success=success, fail=fail, **kwargs)
 
 
-class ErrorQueue(PSPQueue):
+class PullQueue(PSPQueue):
     '''
-    Queue of Errors to Report
+    Queue of source codes to pull
     '''
+    def __init__(self, env: InstallEnv,
+                 success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=update, env = env, q_type='pull',
+                         success=success, fail=fail, **kwargs)
+
+
+class CloneQueue(PSPQueue):
+    '''
+    Queue of projects to install
+    '''
+    def __init__(self, env: InstallEnv,
+                 success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=clone, env=env, q_type='clone',
+                         success=success, fail=fail, **kwargs)

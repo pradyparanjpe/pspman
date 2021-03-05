@@ -26,14 +26,14 @@ Environment Classes
 import os
 import sys
 import typing
+import re
 from datetime import datetime
-import shutil
+import json
+import yaml
 from .tools import timeout
-from .tag import ActionTag
+from .tag import ACTION_TAG
 from .shell import process_comm
-from .installations import (install_make, install_pip,
-                            install_meson, install_go)
-from .errors import TagError
+from .errors import TagError, GitURLError
 from . import print
 
 
@@ -49,6 +49,7 @@ class  InstallEnv():
     Attributes:
         clone_dir: Path of clone_dir
         prefix: Path to prefix
+        force_risk: is risk forced?
 
     '''
     def __init__(self, clone_dir: str, prefix: str = None,
@@ -58,8 +59,11 @@ class  InstallEnv():
         if prefix is None:
             prefix = clone_dir
         self.prefix = os.path.realpath(prefix)
-        self.choices = choices or {"only_pull": False, "force_risk": False,
-                                   "stale": False}
+        self.force_risk = choices.get('force_risk', False)\
+            if choices else False
+
+        # Check permissions for folders
+        self.permission_check()
 
         # initializations
 
@@ -69,26 +73,23 @@ class  InstallEnv():
         # Installations
         os.makedirs(self.prefix, exist_ok=True)
 
-        # Check permissions for folders
-        self.permission_check()
-
     def permission_check(self) -> None:
         '''
         Check permissions in the given context
         '''
         # Am I root?
-        if os.environ["USER"].lower() == "root":
-            print("I hate dictators", mark=3)
-            if not self.choices.get('force_risk'):
-                print("Bye", mark=0)
+        if os.environ['USER'].lower() == 'root':
+            print('I hate dictators', mark=3)
+            if not self.force_risk:
+                print('Bye', mark=0)
                 sys.exit(2)
-            print("I can only hope you know what you are doing...", mark=3)
-            print("Here is a chance to kill me in", mark=2)
+            print('I can only hope you know what you are doing...', mark=3)
+            print('Here is a chance to kill me in', mark=2)
             timeout(10)
-            print("", mark=0)
+            print('', mark=0)
             print("¯\\_(ツ)_/¯ Your decision ¯\\_(ツ)_/¯", mark=3)
-            print("", mark=0)
-            print("[INFO] Proceeding...", mark=1)
+            print('', mark=0)
+            print('Proceeding...', mark=1)
         else:
             # Is installation directory read/writable
             self.perm_pass(self.clone_dir)
@@ -104,34 +105,37 @@ class  InstallEnv():
             True if all rwx permissions are granted
 
         '''
-        stdout = process_comm("stat", "-L", "-c", "%U %G %a",
+        if not os.path.exists(permdir):
+            # clone/prefix directory will be created anew
+            permdir = os.path.split(os.path.realpath(permdir))[0]
+        stdout = process_comm('stat', '-L', '-c', "%U %G %a",
                               permdir, fail_handle='report')
         if stdout is None:
-            print("Error checking directory permissions, aborting...", mark=5)
+            print('Error checking directory permissions, aborting...', mark=5)
             sys.exit(1)
-        owner, group, octperm = stdout.replace("\n", "").split(" ")
-        if (octperm[-1] == "7") != 0:
+        owner, group, octperm = stdout.replace("\n", '').split(' ')
+        if (octperm[-1] == '7') != 0:
             # everyone has access
             return True
-        if (octperm[-2] == "7") != 0:
+        if (octperm[-2] == '7') != 0:
             # some group has permissions
-            stdout = process_comm("groups", os.environ["USER"],
+            stdout = process_comm('groups', os.environ['USER'],
                                   fail_handle='report')
             if stdout is None:
                 # error
-                print("Error checking group permissions, aborting...", mark=5)
+                print('Error checking group permissions, aborting...', mark=5)
                 sys.exit(1)
-            user_groups = stdout.split(" ")
+            user_groups = stdout.split(' ')
             for u_grp in user_groups:
                 if u_grp == group:
                     return True
-        if (octperm[-3] == "7") != 0:
+        if (octperm[-3] == '7') != 0:
             # owner has permissions
-            if os.environ["USER"] == owner:
+            if os.environ['USER'] == owner:
                 return True
-        print("We do not have sufficient permissions", mark=5)
-        print("Try another location", mark=2)
-        print("Bye", mark=0)
+        print('We do not have sufficient permissions', mark=5)
+        print('Try another location', mark=2)
+        print('Bye', mark=0)
         sys.exit(1)
         return False
 
@@ -150,81 +154,82 @@ class GitProject():
 
     Attributes:
         url: url for git remote
-        path: path of this project
+        name: name of project folder
         tag: action tagged to project
-        updated: last updated on datetime
+        last_updated: last updated on datetime
 
     '''
     def __init__(self,
-                 env: InstallEnv,
                  url: str = None,
                  name: str = None,
                  **kwargs) -> None:
-        self.env = env
-        self.updated = None
-        self._name = name
         self.url = url
-        if 'tag' in kwargs:
-            tag = kwargs['tag']
-            if isinstance(tag, ActionTag):
-                self.a_tag: ActionTag = tag
-            else:
-                self.a_tag = ActionTag(tag)
-        else:
-            self.a_tag = ActionTag(0)
-        if 'data' in kwargs:
-            data = kwargs['data']
-            if data is not None:
-                self.merge(data)
+        self.tag = int(kwargs['tag']) if 'tag' in kwargs else 0
+        self.last_updated: typing.Optional[datetime] = None
+        if kwargs.get('data') is not None:
+            self.merge(kwargs['data'])
+        self.name = name or self.update_name()
 
-    def merge(self, data: typing.Dict[str, object]):
+    def update_name(self) -> str:
         '''
-        Update values that are ``None`` or `false` type using data
+        Update project name.
+        Call this method after updating ``url``
+
+        Returns:
+            The updated name
+        '''
+        if hasattr(self, 'name'):
+            return self.name
+        if self.url is None:
+            raise GitURLError
+        self.name = os.path.splitext(
+            self.url.replace(':', '/').split('/')[-1]
+        )[0]
+        return self.name
+
+    def merge(self, data: typing.Dict[str, object]) -> None:
+        '''
+        Update values that are ``None`` type using ``data``.
+        Doesn't change set values
+
+        Args:
+            data: source for update
+
         '''
         for key, val in data.items():
             self.__dict__[key] = self.__dict__.get(key) or val
 
-    @property
-    def path(self):
-        return os.path.join(self.env.clone_dir, self.name)
-
-    @property
-    def name(self):
+    def type_install(self, env: InstallEnv) -> None:
         '''
-        name of project folder
-        '''
-        if self._name:
-            return self._name
-        if self.url is None:
-            # This is dangerous, isn't it?
-            return None
-        self._name =\
-            os.path.splitext(self.url.replace(":", "/").split("/")[-1])[0]
-        return self._name
+        Determine guess the installation type based on files present
+        in the cloned directory
 
-    @name.setter
-    def name(self, name):
+        Args:
+            env: environment context in which, the type is determined
         '''
-        :noindex:
-
-        Hard-set name
-        '''
-        self._name = name
-
-    def type_install(self) -> int:
-        if any(os.path.exists(os.path.join(self.path, make_sign)) for
-               make_sign in ("Makefile", "configure")):
-            self.a_tag.make()
-        elif any(os.path.exists(os.path.join(self.path, pip_sign)) for
-                 pip_sign in ("setup.py", "setup.cfg")):
-            self.a_tag.pip()
-        elif os.path.exists(os.path.join(self.path, "meson.build")):
-            self.a_tag.meson()
-        elif os.path.exists(os.path.join(self.path, "main.go")):
-            self.a_tag.goin()
+        if self.name is None:
+            if self.update_name() is None:
+                raise GitURLError()
+        path = os.path.join(env.clone_dir, self.name)
+        if any(os.path.exists(os.path.join(path, make_sign)) for
+               make_sign in ('Makefile', 'configure')):
+            self.tag |= ACTION_TAG['make']
+        elif any(os.path.exists(os.path.join(path, pip_sign)) for
+                 pip_sign in ('setup.py', 'setup.cfg')):
+            self.tag |= ACTION_TAG['pip']
+        elif os.path.exists(os.path.join(path, 'meson.build')):
+            self.tag |= ACTION_TAG['meson']
+        elif os.path.exists(os.path.join(path, 'main.go')):
+            self.tag |= ACTION_TAG['go']
         else:
-            self.a_tag
-        return self.a_tag.tag // 0x10
+            self.tag &= 0x0F
+
+    def mark_update_time(self):
+        '''
+        Mark that the project was updated
+
+        '''
+        self.last_updated = datetime.now()
 
     def __repr__(self) -> str:
         '''
@@ -232,9 +237,9 @@ class GitProject():
         '''
         return f'''
         *** {self.name} ***
-        Last Updated: {self.updated}
+        Last Updated: {self.last_updated}
         Source: {self.url}
-        Base tag: {self.a_tag}
+        Base tag: {hex(self.tag)}
         '''
 
     def __str__(self) -> str:
@@ -242,73 +247,71 @@ class GitProject():
         Print object name
 
         '''
-        return self.name
+        return str(self.name)
 
-    def clone(self) -> bool:
+
+class GitProjectListEncoder(json.JSONEncoder):
+    '''
+    Encode Class object's __dict__
+
+    '''
+    def default(self, o: GitProject) -> dict:
+        return o.__dict__
+
+
+class PSPManDB():
+    '''
+    Database to store and load database
+
+    Attributes:
+        env: InstallEnv
+        git_projects: list of database project
+        fname: fname
+
+    Args:
+        git_projects: project
+        fname: fname
+
+    '''
+
+    def __init__(self,
+                 env: InstallEnv,
+                 git_projects: typing.Dict[str, GitProject] = None,
+                 fname: str = '.pman_db.yml') -> None:
+        self.env = env
+        self.git_projects = git_projects or {}
+        self.fname = fname
+
+    def load_db(self) -> None:
         '''
-        Get (clone) the remote url
-
-        Returns:
-            ``False`` if cloning failed, else, ``True``
-
-        '''
-        if self.url is None:
-            # clone url is unknown!
-            return False
-        success = process_comm('git', "-C", self.path, 'clone',
-                               self.url, self.name, fail_handle='report')
-        if success is None:
-            print(f'Cloning source of {self.name} failed', mark='err')
-            return False
-        self.a_tag.try_install()
-        return True
-
-    def update(self) -> bool:
-        '''
-        Update (pull) source code.
-        Success means (Update successful or code is up-to-date)
-
-        Returns:
-            ``False`` if update failed, else, ``True``
-
-        '''
-        print(f'updating code for {self.path}', mark='info')
-        g_pull = process_comm("git", '-C', self.path, "pull",
-                              "--recurse-submodules", fail_handle='ignore')
-        if g_pull and "Already up to date" not in g_pull:
-            if "Updating " in g_pull:
-                self.a_tag.try_install()
-                print(f"Updated source code of {self}", mark=3)
-            else:
-                print(f"Failed updating source code of {self}", mark=4)
-                return False
-        return True
-
-    def install(self) -> bool:
-        '''
-        Install (update) from source code.
-
-        Returns:
-            ``False`` if installation failed, else, ``True``
+        Find database file (yml) and load its contents
 
         '''
-        self.type_install()
-        print(f'tag: {self.a_tag.tag}', mark='bug')
-        install_call: typing.Callable = {
-            1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
-        }.get(int(self.a_tag.tag//0x10), lambda **_: True)
-        if self.a_tag.tag & 0x04:
-            return install_call(code_path=self.path, prefix=self.env.prefix)
-        return True
+        db_path = os.path.join(self.env.clone_dir, self.fname)
+        if not os.path.isfile(db_path):
+            return
+        with open(db_path, 'r') as db_handle:
+            db = yaml.load(db_handle, Loader=yaml.Loader)
 
-    def delete(self) -> None:
+        # Load Git Projects
+        for name, gp_data in db.get('git_projects', {}).items():
+            self.git_projects[name] = GitProject(data=gp_data)
+
+    def save_db(self) -> None:
         '''
-        Delete this project
+        Save current information as yaml database file
 
         '''
-        print(f"Deleting {self}", mark=1)
-        print("I can't guess which files were installed.", mark=1)
-        print("So, leaving those scars behind...", mark=0)
-        print("This project may be added again using:", mark=0)
-        print(f"pspman -i {self.url}", mark=0)
-        shutil.rmtree(self.path)
+        # Human readable is more transparent than easily decodable encoding
+        db_path = os.path.join(self.env.clone_dir, '.psp_db.yml')
+        if os.path.isfile(db_path):
+            # old database file does exist
+            # Copy a backup
+            # Older backup (if it exists) is erased
+            os.rename(db_path, db_path + '.bak')
+        gp_data = {}
+        # dump git projects' data attributes
+        for name, project in self.git_projects.items():
+            gp_data[name] = project.__dict__
+        with open(db_path, 'w') as db_handle:
+            yaml.dump({'git_projects': gp_data}, db_handle)

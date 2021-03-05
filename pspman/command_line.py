@@ -26,7 +26,6 @@ import os
 import typing
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import argcomplete
-from .classes import InstallEnv
 from .project_actions import CurrentActions
 from . import print
 
@@ -40,20 +39,20 @@ def cli() -> typing.Dict[str, typing.Any]:
     CAUTION: DO NOT RUN THIS SCRIPT AS ROOT.
     CAUTION: If you still insist, I won't care.
     '''
-    homedir = os.environ["HOME"]
+    homedir = os.environ['HOME']
     parser = ArgumentParser(description=description,
                             formatter_class=RawDescriptionHelpFormatter)
     sub_parsers = parser.add_subparsers()
     list_gits = sub_parsers.add_parser('list', aliases=['info'])
     list_gits.set_defaults(call_function='list')
-    # add_gits = sub_parsers.add_parser('add', aliases=['install'])
-    # del_gits = sub_parsers.add_parser('delete', aliases=['remove','uninstall'])
-    parser.add_argument('-c', '--clone-dir', type=str, nargs="?",
+    parser.add_argument('-c', '--clone-dir', type=str, nargs='?',
                         default=f'{homedir}/.pspman/programs',
                         help='path for all git clones')
-    parser.add_argument('-p', '--prefix', type=str, nargs="?",
+    parser.add_argument('-p', '--prefix', type=str, nargs='?',
                         default=f'{homedir}/.pspman',
                         help='path for installation')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='display list in verbose form')
     parser.add_argument('-l', '--list-projs', action='store_true',
                         help='display list of installed repositories and exit')
     parser.add_argument('-s', '--stale', action='store_true',
@@ -62,11 +61,11 @@ def cli() -> typing.Dict[str, typing.Any]:
                         help='only pull, do not try to install')
     parser.add_argument('-f', '--force-risk', action='store_true',
                         help='force working with root permissions [DANGEROUS]')
-    # parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
-                        # nargs="*", help='URL to clone new project', default=[])
-    # parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
-                        # nargs="*", help='PROJ to clone new project',
-                        # default=[])
+    parser.add_argument('-i', '--pkg-install', metavar='URL', type=str,
+                        nargs='*', help='URL to clone new project', default=[])
+    parser.add_argument('-d', '--pkg-delete', metavar='PROJ', type=str,
+                        nargs='*', help='PROJ to clone new project',
+                        default=[])
     argcomplete.autocomplete(parser)
     args = vars(parser.parse_args())
 
@@ -74,20 +73,16 @@ def cli() -> typing.Dict[str, typing.Any]:
     choices = {
         'stale': args.get('stale', False),
         'only_pull': args.get('only_pull', False),
+        'verbose': args.get('verbose', False),
         'force_risk': args.get('force_risk', False),
     }
     del args['stale']
+    del args['verbose']
     del args['only_pull']
     del args['force_risk']
     args['choices'] = choices
     return args
 
-
-def list(env: InstallEnv) -> None:
-    '''
-    List all known gits
-
-    '''
 
 def call() -> None:
     '''
@@ -107,11 +102,10 @@ def call() -> None:
     )
     sub_call = args.get('call_function')
     if sub_call is not None:
-        {'list': action.list_project}[sub_call]()
-    else:
-        print('no subfunction called', mark='bug' )
-    action.update_project()
-    print("Trying installations")
-    action.install_project()
-    action.save_db()
-    print("done.", mark=1)
+        {'list': action.list_projects}[sub_call]()
+    elif not args['choices'].get('stale', False):
+        action.update_projects()
+        os.waitpid(action.queues['fail'].pid, 0)
+        os.waitpid(action.queues['success'].pid, 0)
+    print()
+    print('done.', mark=1)
