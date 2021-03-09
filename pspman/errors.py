@@ -57,6 +57,7 @@ class ClosedQueueError(PSPManError):
         {type(queue)} Queue is closed
         ''')
 
+
 class GitURLError(PSPManError):
     '''
     Git URL (and hence or otherwise, name) can't be determined
@@ -64,4 +65,23 @@ class GitURLError(PSPManError):
     def __init__(self):
         super(PSPManError, self).__init__(f'''
         Git URL and/name not found/inferred
+        ''')
+
+
+class CommandError(PSPManError):
+    '''
+    Base class for subprocess failure
+
+    Args:
+        cmd: command passed to shell for execution
+        err: stderr received from shell after failure
+
+    '''
+    def __init__(self, cmd: list, err: str = None) -> None:
+        super().__init__(self, f'''
+        Command Passed for execution:
+        {cmd}
+
+        STDERR from command:
+        {err}
         ''')

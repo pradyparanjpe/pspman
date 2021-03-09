@@ -37,7 +37,7 @@ ENVIRONMENT
 ${HOME}/.pspman
 ~~~~~~~~~~~~~~~
 
-Used as default ``prefix`` and parent for default clone directory ``programs``
+Used as default ``prefix`` and parent for default clone directory ``src``
 
 CAUTION
 -------

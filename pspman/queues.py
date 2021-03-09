@@ -34,11 +34,11 @@ import threading
 import random
 import tempfile
 import json
-from .classes import GitProject, InstallEnv, GitProjectListEncoder
+from .psprint import print
+from .classes import GitProject, GitProjectListEncoder
 from .actions import delete, clone, update, install, success, failure
 from .errors import ClosedQueueError
 from .tag import TAG_ACTION
-from . import print
 
 
 class PSPQueue:
@@ -66,7 +66,6 @@ class PSPQueue:
 
     '''
     def __init__(self, action: typing.Callable,
-                 env: InstallEnv,
                  fail_q: 'PSPQueue' = None,  # type: ignore
                  **kwargs):
         self._running = False
@@ -81,7 +80,6 @@ class PSPQueue:
             if ds_q is not None:
                 ds_q.upstream_qs.append(self)
         self.action = action
-        self.env = env
         if kwargs.get('items') is None:
             self.queue: typing.Dict[str, GitProject] = {}
         else:
@@ -140,23 +138,20 @@ class PSPQueue:
         self._running = True
         while len(self.queue):
             with multiprocessing.Pool(self._parallel) as pool:
-                results = list(
-                    pool.map_async(
-                        self.action,
-                        ((project, self.env)
-                         for project in self.queue.values())
-                    ).get()
+                results: typing.List[typing.Tuple[str, str, int, bool]] = list(
+                    pool.map_async(self.action, self.queue.values()).get()
                 )
             for res in results:
                 project = self.queue[res[0]]
                 del self.queue[res[0]]
+                project.tag = res[-2]
                 if res[-1]:
                     if self.downstream_qs['success'] is not None:
                         self.downstream_qs['success'].add(project)
                 else:
                     if self.downstream_qs['fail'] is not None:
                         self.downstream_qs['fail'].add(project)
-                print(res[1], mark=TAG_ACTION[project.tag&0x01])
+                print(res[1], mark="info")
 
         self._running = False
 
@@ -176,6 +171,10 @@ class PSPQueue:
     def start(self) -> int:
         '''
         Parent: Start a batch run
+
+        Returns:
+            child: 0
+            parent: >0
 
         '''
         pid = os.fork()
@@ -199,10 +198,11 @@ class PSPQueue:
                         self.downstream_qs['success'].done(self)
                 if self.downstream_qs['fail'] is not None:
                         self.downstream_qs['fail'].done(self)
-                sys.exit(0)
+            sys.exit(0)
         else:
             # parent client
-            return pid
+            pass
+        return pid
 
     def handle_conn(self, pipe: socket.socket) -> None:
         '''
@@ -297,9 +297,8 @@ class DeleteQueue(PSPQueue):
     '''
     Queue for projects to delete
     '''
-    def __init__(self, env: InstallEnv,
-                 success: PSPQueue, fail: PSPQueue, **kwargs):
-        super().__init__(action=delete, env=env, q_type='delete',
+    def __init__(self, success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=delete, q_type='delete',
                          success=success, fail=fail, **kwargs)
 
 
@@ -307,9 +306,8 @@ class InstallQueue(PSPQueue):
     '''
     Queue of projects to install
     '''
-    def __init__(self, env: InstallEnv,
-                 success: PSPQueue, fail: PSPQueue, **kwargs):
-        super().__init__(action=install, env=env, q_type='install',
+    def __init__(self, success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=install, q_type='install',
                          success=success, fail=fail, **kwargs)
 
 
@@ -317,9 +315,8 @@ class PullQueue(PSPQueue):
     '''
     Queue of source codes to pull
     '''
-    def __init__(self, env: InstallEnv,
-                 success: PSPQueue, fail: PSPQueue, **kwargs):
-        super().__init__(action=update, env = env, q_type='pull',
+    def __init__(self, success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=update, q_type='pull',
                          success=success, fail=fail, **kwargs)
 
 
@@ -327,7 +324,6 @@ class CloneQueue(PSPQueue):
     '''
     Queue of projects to install
     '''
-    def __init__(self, env: InstallEnv,
-                 success: PSPQueue, fail: PSPQueue, **kwargs):
-        super().__init__(action=clone, env=env, q_type='clone',
+    def __init__(self, success: PSPQueue, fail: PSPQueue, **kwargs):
+        super().__init__(action=clone, q_type='clone',
                          success=success, fail=fail, **kwargs)

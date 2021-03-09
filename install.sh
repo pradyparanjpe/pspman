@@ -22,7 +22,7 @@
 
 
 function add_to_path() {
-    dir_struct=( "bin" "share" "lib" "lib64" "include" "etc" "tmp" "programs" )
+    dir_struct=( "bin" "share" "lib" "lib64" "include" "etc" "tmp" "src" )
     if [[ ! $PATH =~ "${HOME}/.local/bin" ]]; then
         echo "export PATH=\"\${PATH}:\${HOME}/.local/bin\"" >> "${HOME}/.bashrc"
     fi

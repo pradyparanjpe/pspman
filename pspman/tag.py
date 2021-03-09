@@ -27,15 +27,16 @@ import typing
 
 
 ACTION_TAG: typing.Dict[str, int] = {
-    'info': 0x00,
+    'info': 0x00,  # nothing
 
     'make': 0x10,
     'pip': 0x20,
     'meson': 0x30,
     'go': 0x40,
 
-    'pull': 0x01,
-    'install': 0x02,
+    'delete': 0x01,
+    'pull': 0x02,
+    'install': 0x04,
 }
 '''
 Action: tag(int) codes
@@ -43,15 +44,16 @@ Action: tag(int) codes
 
 
 TAG_ACTION: typing.Dict[int, str] = {
-    0x00: 'info',
+    0x00: 'info',  # nothing
 
     0x10: 'make',
     0x20: 'pip',
     0x30: 'meson',
     0x40: 'go',
 
-    0x01: 'pull',
-    0x02: 'install',
+    0x01: 'delete',
+    0x02: 'pull',
+    0x04: 'install',
 }
 '''
 tag: Action (en)codes
@@ -59,13 +61,16 @@ tag: Action (en)codes
 
 
 FAIL_TAG: typing.Dict[int, str] = {
-    (0xf0 - 0x10): 'Make installation failed',
-    (0xf0 - 0x20): 'Pip installation failed',
-    (0xf0 - 0x30): 'Meson installation failed',
-    (0xf0 - 0x40): 'Go installation failed',
+    0x10: 'Make installation failed',
+    0x20: 'Pip installation failed',
+    0x30: 'Meson installation failed',
+    0x40: 'Go installation failed',
 
-    (0x0f - 0x01): 'Code-update failed',
-    (0x0f - 0x02): 'Installation failed',
+    0x01: 'Code-delete failed',
+    0x02: 'Code-update failed',
+    0x04: 'Installation failed',
+
+    0x00: 'failed at everything',
 }
 '''
 tag(ing): Action-failure codes

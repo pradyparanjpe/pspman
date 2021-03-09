@@ -26,30 +26,26 @@ parallel threading/multithreading operations
 import os
 import typing
 import shutil
-from . import print
+from . import CONFIG
+from .psprint import print
 from .shell import git_comm
-from .classes import InstallEnv, GitProject, PSPManDB
+from .classes import GitProject, PSPManDB
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION
 from .installations import (install_make, install_pip,
                             install_meson, install_go)
 
 
-def delete(args) -> typing.Tuple[str, str, bool]:
+def delete(project: GitProject) -> typing.Tuple[str, str, int, bool]:
     '''
     Delete this project
 
     Args:
-        args:
-            project: GitProject: project to delete
-            env: InstallEnv: current environment background
+        project: project to delete
 
     Returns:
         project.name, print_info, success of action
 
     '''
-    project: GitProject
-    env: InstallEnv
-    project, env, *_ = args
     print_info = f'''
     Deleting {project.name}
 
@@ -61,132 +57,121 @@ def delete(args) -> typing.Tuple[str, str, bool]:
     '''
 
     try:
-        shutil.rmtree(os.path.join(env.clone_dir, project.name))
-        return project.name, print_info, True
+        shutil.rmtree(os.path.join(CONFIG.clone_dir, project.name))
+        return (project.name, print_info,
+                project.tag & (0xff - ACTION_TAG['delete']), True)
     except OSError:
         print_info = "FAILED!!!\n" + print_info
-        return project.name, print_info, False
+        return project.name, print_info, project.tag, False
 
 
-def clone(args) -> typing.Tuple[str, str, bool]:
+def clone(project: GitProject) -> typing.Tuple[str, str, int, bool]:
     '''
     Get (clone) the remote project.url
 
     Args:
-        args:
-            project: GitProject: project to clone
-            env: InstallEnv: current environment background
+        project: project to clone
 
     Returns:
         project.name, print_info, success of action
 
     '''
-    project: GitProject
-    env: InstallEnv
-    project, env, *_ = args
     print_info = f'Cloned source of {project.name}'
     if project.url is None:
-        return project.name, 'Unknown Clone URL', False
-    success = git_comm('clone', os.path.join(env.clone_dir, project.name),
-                       project.url, project.name)
+        return (project.name, 'Unknown Clone URL', project.tag, False)
+    success = git_comm(clone_dir=os.path.join(CONFIG.clone_dir, project.name),
+                       action='clone',
+                       url=project.url, name=project.name)
     if success is None:
         print_info = f'FAILED Cloning source of {project.name}'
-        return project.name, print_info, False
-    project.type_install(env=env)
-    return project.name, print_info, True
+        return (project.name, print_info, project.tag, False)
+    project.type_install()
+    return (project.name, print_info,
+            (project.tag | ACTION_TAG['install']) &
+            (0xff - ACTION_TAG['pull']), True)
 
 
-def update(args) -> typing.Tuple[str, str, bool]:
+def update(project: GitProject) -> typing.Tuple[str, str, int, bool]:
     '''
     Update (pull) source code.
     Success means (Update successful or code is up-to-date)
 
     Args:
-        args:
-            project: GitProject: project to update
-            env: InstallEnv: current environment background
+        project: project to update
 
     Returns:
         project.name, print_info, success of action
 
     '''
-    project: GitProject
-    env: InstallEnv
-    project, env, *_ = args
     print_info = f'{project.name} is up to date.'
-    g_pull = git_comm('pull', os.path.join(env.clone_dir, project.name))
+    g_pull = git_comm(clone_dir=os.path.join(CONFIG.clone_dir, project.name),
+                      action='pull')
+    tag = project.tag & (0xff - ACTION_TAG['pull'])
     if g_pull and 'Already up to date' not in g_pull:
         print_info = f'Updated code for {project.name}'
         if 'Updating ' not in g_pull:
             print_info = f'FAILED Updating code for {project.name}'
-            return project.name, print_info, False
-    return project.name, print_info, True
+            return project.name, print_info, tag, False
+        tag |=  ACTION_TAG['install']
+    return project.name, print_info, tag, True
 
 
-def install(args) -> typing.Tuple[str, str, bool]:
+def install(project: GitProject) -> typing.Tuple[str, str, int, bool]:
     '''
     Install (update) from source code.
 
     Args:
-        args:
-            project: GitProject: project to install
-            env: InstallEnv: current environment background
+        project: GitProject: project to install
 
     Returns:
         project.name, print_info, success of action
 
     '''
-    project: GitProject
-    env: InstallEnv
-    project, env, *_ = args
     print_info = f'Not trying to install {project.name}'
     install_call: typing.Callable = {
         1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
     }.get(int(project.tag//0x10), lambda **_: True)
     if not project.tag & ACTION_TAG['install']:
-        return project.name, print_info, True
+        return project.name, print_info, project.tag, True
     success = install_call(
-        code_path=os.path.join(env.clone_dir, project.name),
-        prefix=env.prefix
+        code_path=os.path.join(CONFIG.clone_dir, project.name),
+        prefix=CONFIG.prefix
     )
     if success:
         print_info = f'Installed project {project.name}'
-        return project.name, print_info, True
+        return (project.name, print_info,
+                project.tag & (0xff - ACTION_TAG['install']), True)
     print_info = f'FAILED Installing project {project.name}'
-    return project.name, print_info, False
+    return (project.name, print_info, project.tag , False)
 
 
-def success(args) -> typing.Tuple[str, str, bool]:
+def success(project: GitProject) -> typing.Tuple[str, str, int, bool]:
     '''
     List successful projects
 
     Args:
-        args:
-            project: GitProject: project that completed successfully
-            env: ignored
+        project: GitProject: project that completed successfully
 
     '''
-    project: GitProject
-    project, *_ = args
     project.mark_update_time()
-    performed = TAG_ACTION[project.tag & 0x01]
     # push back to parent
-    print(project.name, mark=performed)
-    return project.name, '', True
+    if project.tag & 0x04:
+        print(project.name, mark='install')
+    elif project.tag & 0x02:
+        print(project.name, mark='pull')
+    elif project.tag & 0x01:
+        print(project.name, mark='delete')
+    return project.name, '', project.tag, True
 
 
-def failure(args) -> typing.Tuple[str, str, bool]:
+def failure(project: GitProject) -> typing.Tuple[str, str, int, bool]:
     '''
     List failure points in projects
 
     Args:
-        args:
-            project: GitProject: project that failed
-            env: ignored
+        project: GitProject: project that failed
 
     '''
-    project: GitProject
-    project, *_ = args
     print(f'{FAIL_TAG[project.tag & 0x0F]} for {project.name}',
           mark='err')
-    return project.name, '', True
+    return project.name, '', project.tag, True

@@ -24,7 +24,7 @@ Miscellaneous tools
 
 
 import time
-from . import print
+from .psprint import print
 
 
 def timeout(wait: int = 10) -> None:
