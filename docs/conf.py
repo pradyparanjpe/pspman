@@ -23,7 +23,7 @@ copyright = '2021, Pradyumna Paranjape'
 author = 'Pradyumna Paranjape'
 
 # The full version, including alpha/beta/rc tags
-release = '21.3.9'
+release = '21.3.12'
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,9 +31,9 @@ release = '21.3.9'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.todo', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon',
-              'sphinx.ext.viewcode', 'sphinx_rtd_theme',
-              'sphinx_autodoc_typehints',]
+extensions = ['sphinx.ext.todo', 'sphinx_rtd_theme', 'sphinx.ext.autodoc',
+              'sphinx.ext.napoleon', 'sphinx.ext.viewcode', 'sphinxarg.ext',
+              'sphinx_autodoc_typehints']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

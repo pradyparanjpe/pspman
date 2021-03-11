@@ -24,11 +24,12 @@ python module call
 
 import os
 import typing
-from . import CONFIG, __version__
-from .define import prepare_env
-from .psprint import print
-from .project_actions import (find_gits, end_queues, init_queues, del_projects,
-                              add_projects, print_projects, update_projects)
+from . import ENV, print, __version__
+from .define import cli_opts, prepare_env, lock
+from .project_actions import (
+    interrupt, find_gits, end_queues, init_queues, del_projects, add_projects,
+    print_projects, update_projects,
+)
 
 
 def call() -> int:
@@ -44,31 +45,60 @@ def call() -> int:
         error code
 
     '''
-    env_err = prepare_env(CONFIG)
-    if env_err != 0:
-        return env_err
-    if CONFIG.call_function == 'version':
-        print(__version__, mark='info')
+    env = ENV.update(cli_opts())
+
+    if env.call_function == 'unlock':
+        lock(env=env, unlock=True)
         return 0
 
-    if CONFIG.verbose:
-        print(CONFIG, mark='bug')
-    git_projects = find_gits()
-    if CONFIG.call_function == 'info':
-        return print_projects(git_projects=git_projects)
+    if lock(env):
+        return 1
 
-    queues = init_queues()
-    if CONFIG.proj_delete:
-        del_projects(git_projects=git_projects, queues=queues,
-                     del_list=CONFIG.proj_delete)
-    if CONFIG.proj_install:
-        add_projects(git_projects=git_projects, queues=queues,
-                     to_add_list=CONFIG.proj_install)
-    if not CONFIG.stale:
-        update_projects(git_projects=git_projects, queues=queues)
-    end_queues(queues=queues)
-    print()
-    print('done.', mark=1)
+    env_err = prepare_env(env)
+    if env_err != 0:
+        return env_err
+
+    if env.call_function == 'version':
+        print(__version__, mark='info')
+        lock(env=env, unlock=True)
+        return 0
+
+    if env.verbose:
+        print(env, mark='bug')
+    git_projects = find_gits(env=env)
+    if env.call_function == 'info':
+        lock(env, unlock=True)
+        return print_projects(env=env, git_projects=git_projects)
+
+    queues = init_queues(env=env)
+    try:
+        if env.delete:
+            del_projects(env=env, git_projects=git_projects, queues=queues,
+                         del_list=env.delete)
+        if env.install:
+            add_projects(env=env, git_projects=git_projects, queues=queues,
+                         to_add_list=env.install)
+        if not env.stale:
+            update_projects(env=env, git_projects=git_projects, queues=queues)
+        for q_name in ('pull', 'clone'):
+            if q_name in queues:
+                if env.verbose:
+                    print(f'Waiting for {queues[q_name].q_type} queue',
+                          mark='bug')
+                os.waitpid(queues[q_name].pid, 0)
+        for q_name in 'delete', 'install':
+            if q_name in queues:
+                try:
+                    queues[q_name].done()
+                except BrokenPipeError:
+                    pass
+        end_queues(env=env, queues=queues)
+        lock(env=env, unlock=True)
+        print()
+        print('done.', mark=1)
+    except KeyboardInterrupt:
+        interrupt(queues)
+        return 1
     return 0
 
 

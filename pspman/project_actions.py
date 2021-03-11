@@ -26,21 +26,23 @@ Actions on projects, other than automated installations
 import os
 import typing
 import re
-from . import CONFIG
-from .psprint import print
+from . import print
 from .shell import git_comm
-from .classes import GitProject, PSPManDB
-from .queues import (PSPQueue, SuccessQueue, FailQueue, DeleteQueue,
-                     PullQueue, CloneQueue, InstallQueue)
+from .classes import InstallEnv, GitProject, PSPManDB
+from .queues import (PSPQueue, PullQueue, FailQueue, CloneQueue, SuccessQueue,
+                     DeleteQueue, InstallQueue)
 
 
-def find_gits(git_projects: typing.Dict[str, GitProject]
-               = None) -> typing.Dict[str, GitProject]:
+def find_gits(
+        env: InstallEnv,
+        git_projects: typing.Dict[str, GitProject] = None
+) -> typing.Dict[str, GitProject]:
     '''
     Locate git projects in the defined `environment` (parse)
     Load database (overrides parser)
 
     Args:
+        env: Installation context
         git_projects: Already known git projects
 
     Returns:
@@ -50,34 +52,36 @@ def find_gits(git_projects: typing.Dict[str, GitProject]
     # discover projects
     git_projects = git_projects or {}
     discovered_projects: typing.Dict[str, GitProject] = {}
-    read_db = PSPManDB()
+    read_db = PSPManDB(env=env)
     read_db.load_db()
-    for leaf in os.listdir(CONFIG.clone_dir):
-        if not os.path.isdir(os.path.join(CONFIG.clone_dir, leaf)):
+    for leaf in os.listdir(env.clone_dir):
+        if not os.path.isdir(os.path.join(env.clone_dir, leaf)):
             continue
-        if not os.path.isdir(os.path.join(CONFIG.clone_dir,
+        if not os.path.isdir(os.path.join(env.clone_dir,
                                           leaf, '.git')):
             continue
         if leaf in git_projects:
             continue
-        pkg_path = os.path.join(CONFIG.clone_dir, leaf)
+        pkg_path = os.path.join(env.clone_dir, leaf)
         g_url = git_comm(clone_dir=pkg_path, action='list')
         if g_url is None:
             # failed
             continue
         fetch: typing.List[str] = re.findall(r"^.*fetch.*", g_url)
         url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
-        discovered_projects[leaf] = GitProject(url=url, name=leaf)
+        discovered_projects[leaf] = GitProject(env=env, url=url, name=leaf)
         discovered_projects[leaf].type_install()
     git_projects.update({**discovered_projects, **read_db.git_projects})
     return git_projects
 
 
-def print_projects(git_projects: typing.Dict[str, GitProject] = None) -> int:
+def print_projects(env: InstallEnv,
+        git_projects: typing.Dict[str, GitProject] = None) -> int:
     '''
     List all available projects
 
     Args:
+        env: Installation context
         git_projects: projects to print
 
     Returns:
@@ -87,9 +91,9 @@ def print_projects(git_projects: typing.Dict[str, GitProject] = None) -> int:
     if git_projects is None or len(git_projects) == 0:
         print("No projects Cloned yet...", mark='warn')
         return 1
-    print(f'projects in {CONFIG.clone_dir}', end="\n\n", mark='info')
+    print(f'projects in {env.clone_dir}', end="\n\n", mark='info')
     for project_name, project in git_projects.items():
-        if CONFIG.verbose:
+        if env.verbose:
             print(repr(project), mark='list')
         else:
             if project.url is None:
@@ -100,28 +104,35 @@ def print_projects(git_projects: typing.Dict[str, GitProject] = None) -> int:
     return 0
 
 
-def init_queues() -> typing.Dict[str, PSPQueue]:
+def init_queues(env: InstallEnv,) -> typing.Dict[str, PSPQueue]:
     '''
     Initiate success queues
 
+    Args:
+        env: Installation context
+
     '''
     queues: typing.Dict[str, PSPQueue] = {}
-    queues['success'] = SuccessQueue()
-    queues['fail'] = FailQueue()
-    queues['install'] = queues['success'] if CONFIG.pull\
-        else InstallQueue(success=queues['success'], fail=queues['fail'])
-    queues['delete'] = DeleteQueue(success=queues['success'],
+    queues['success'] = SuccessQueue(env=env)
+    queues['fail'] = FailQueue(env=env)
+    queues['install'] = queues['success'] if env.pull\
+        else InstallQueue(env=env, success=queues['success'],
+                          fail=queues['fail'])
+    queues['delete'] = DeleteQueue(env=env,
+                                   success=queues['success'],
                                    fail=queues['fail'])
     return queues
 
 
-def del_projects(git_projects: typing.Dict[str, GitProject],
+def del_projects(env: InstallEnv,
+                 git_projects: typing.Dict[str, GitProject],
                  queues: typing.Dict[str, PSPQueue],
                  del_list: typing.List[str] = None) -> None:
     '''
     Delete given project
 
     Args:
+        env: Installation context
         git_projects: known git projects
         queues: initiated queues
         del_list: list of names of project directories to be removed
@@ -130,7 +141,7 @@ def del_projects(git_projects: typing.Dict[str, GitProject],
     del_list = del_list or []
     for project_name in del_list:
         if project_name not in git_projects:
-            print(f"Couldn't find {project_name} in {CONFIG.clone_dir}",
+            print(f"Couldn't find {project_name} in {env.clone_dir}",
                   mark=3)
             print('Ignoring...', mark=0)
             continue
@@ -139,25 +150,67 @@ def del_projects(git_projects: typing.Dict[str, GitProject],
     queues['delete'].done()
 
 
-def add_projects(git_projects: typing.Dict[str, GitProject],
+def _parse_inst(inst_input: str) -> typing.Tuple[str,
+                                                 typing.Optional[str],
+                                                 typing.List[str],
+                                                 typing.Dict[str, str]]:
+    '''
+    parse installation string to extract parts
+    inst_input is assumed to be of the form:
+
+    Format:
+        URL[[[___branch]___inst_argv]___sh_env]
+
+    Args:
+        URL: str: url to be cloned
+        branch: str: custom branch to clone blank implies default
+        inst_argv: str: custom arguments these are passed raw
+        sh_env: VAR1=VAL1,VAR2=VAL2,VAR3=VAL3...
+
+    '''
+    branch: typing.Optional[str] = None
+    sh_env: typing.Dict[str, str] = {}
+    inst_argv: typing.List[str] = []
+    url, *args = inst_input.split("___")
+    if args:
+        branch, *args = args
+        if args:
+            inst_argv_str, *args = args
+            inst_argv = inst_argv_str.split(" ")
+            if args:
+                sh_env_str, *args = args
+                for var_val in sh_env_str.split(","):
+                    if "=" not in var_val:
+                        print(f"{var_val} can't be interpreted as 'var=val'\
+ignoring", mark='warn')
+                        continue
+                    var, val = var_val.split("=")
+                    sh_env[var] = val
+    return url, branch, inst_argv, sh_env
+
+def add_projects(env: InstallEnv,
+                 git_projects: typing.Dict[str, GitProject],
                  queues: typing.Dict[str, PSPQueue],
                  to_add_list: typing.List[str] = None) -> None:
     '''
     Add a project with given url
 
     Args:
+        env: Installation context
         git_projects: known git projects
         queues: initiated queues
         to_add_list: urls of projects to be added
 
     '''
     to_add_list = to_add_list or []
-    queues['clone'] = CloneQueue(success=queues['install'],
-                                      fail=queues['fail'])
+    queues['clone'] = CloneQueue(env=env, success=queues['install'],
+                                 fail=queues['fail'])
 
-    for url in to_add_list:
-        new_project = GitProject(url=url)
-        if os.path.isfile(os.path.join(CONFIG.clone_dir,
+    for inst_input in to_add_list:
+        url, branch, inst_argv, sh_env = _parse_inst(inst_input)
+        new_project = GitProject(env=env, url=url, sh_env=sh_env,
+                                 inst_argv=inst_argv, branch=branch)
+        if os.path.isfile(os.path.join(env.clone_dir,
                                        new_project.name)):
             # name is a file, use .d directory
             print(f"A file named '{new_project}' already exists", mark=3)
@@ -172,31 +225,71 @@ def add_projects(git_projects: typing.Dict[str, GitProject],
     queues['clone'].done()
 
 
-def update_projects(git_projects: typing.Dict[str, GitProject],
+def update_projects(env: InstallEnv,
+                    git_projects: typing.Dict[str, GitProject],
                     queues: typing.Dict[str, PSPQueue]) -> None:
     '''
     Trigger update for all projects
 
     Args:
+        env: Installation context
         git_projects: known git projects
         queues: initiated queues
 
     '''
-    queues['pull'] = PullQueue(success=queues['install'],
-                                    fail=queues['fail'])
-    for project_name, project in git_projects.items():
+    queues['pull'] = PullQueue(env=env, success=queues['install'],
+                               fail=queues['fail'])
+    for project in git_projects.values():
         queues['pull'].add(project)
     queues['pull'].done()
 
 
-def end_queues(queues: typing.Dict[str, PSPQueue]) -> bool:
+def end_queues(env: InstallEnv, queues: typing.Dict[str, PSPQueue]) -> bool:
     '''
     wait (blocking) for queues (threads) to end and return
 
     Args:
+        env: Installation context
         queues: initiated queues
     '''
+    # wait for base queues
+    for q_name in ('pull', 'clone'):
+        if q_name in queues and not queues[q_name].closed:
+            if env.verbose:
+                print(f'Waiting for {queues[q_name].q_type} queue',
+                      mark='bug')
+            os.waitpid(queues[q_name].pid, 0)
+
+    # end effect queues
+    for q_name in 'delete', 'install':
+        if q_name in queues:
+            try:
+                queues[q_name].done()
+            except BrokenPipeError:
+                pass
+    # wait for term queues
     for q_name in ('success', 'fail'):
         if q_name in queues:
+            if env.verbose:
+                print(f'Waiting for {queues[q_name].q_type} queue', mark='bug')
             os.waitpid(queues[q_name].pid, 0)
+
     return True
+
+
+def interrupt(queues: typing.Dict[str, PSPQueue]):
+    '''
+    Interrupt actions as they are, kill all children
+
+    Args:
+        queues: intitiated queues
+    '''
+    print('Interrupting...', mark='warn')
+    for q_name, child_q in queues.items():
+        try:
+            child_q.done()
+            print(f'Waiting for {child_q.q_type} queue', mark='bug')
+            os.waitpid(child_q.pid, 0)
+        except BrokenPipeError:
+            # child must be dead
+            pass

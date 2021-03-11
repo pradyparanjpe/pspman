@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8; mode:python -*-
+#!/usr/bin/env bash
+#!/usr/bin/env bash
+# -*- coding:utf-8; mode:shell-script -*-
 #
 # Copyright 2020 Pradyumna Paranjape
 # This le is part of pspman.
@@ -17,31 +18,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
-'''
-PSPMAN: personal service package manager
 
-'''
+# uninstall pspman
 
 
-# Globally defined environment configuration
-import os
-from psprint import init_print
-from .classes import InstallEnv
-
-
-print = init_print(os.path.join(os.path.dirname(__file__),
-                                ".psprintrc.yml")).psprint
-'''
-Customized psprint function
-
-'''
-
-
-# set configurations
-ENV = InstallEnv()
-'''
-Standard installation context
-'''
-
-
-__version__ = '21.3.12'
+bash ./install.sh uninstall

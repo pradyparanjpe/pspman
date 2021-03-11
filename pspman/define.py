@@ -24,92 +24,40 @@ Define variables from command line and defaults
 
 
 import os
+import sys
 import typing
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+import subprocess
+import argparse
 import argcomplete
-from .psprint import print
-from .shell import process_comm
+from psprint import print
+from .classes import InstallEnv
 from .tools import timeout
 
 
-class DefConfig():
-    '''
-    Configuration variables
-
-    Attributes:
-
-    Args:
-        **kwargs: set attributes
-
-    '''
-    def __init__(self):
-        self.call_function: typing.Optional[str] = None
-        self._clone_dir: typing.Optional[str] = None
-        self._prefix: typing.Optional[str] = None
-        self.risk: bool = False
-        self.pull: bool = False
-        self.stale: bool = False
-        self.verbose: bool = False
-        self.proj_install: typing.List[str] = []
-        self.proj_delete: typing.List[str] = []
-
-    @property
-    def clone_dir(self) -> str:
-        if self._clone_dir is None:
-            self._clone_dir = os.path.join(os.environ['HOME'], ".pspman")
-        return os.path.join(self._clone_dir, 'src')
-
-    @clone_dir.setter
-    def clone_dir(self, value):
-        self._clone_dir = value
-
-    @clone_dir.deleter
-    def clone_dir(self):
-        self._clone_dir = os.path.join(os.environ['HOME'], ".pspman")
-
-    @property
-    def prefix(self) -> str:
-        if self._prefix is None:
-            self._prefix = os.path.split(self.clone_dir)[0]
-        return self._prefix
-
-    @prefix.setter
-    def prefix(self, value):
-        self._prefix = value
-
-    @prefix.deleter
-    def prefix(self):
-        self._prefix = self.clone_dir
-
-    def __repr__(self) -> str:
-        return  f'''
-        Clone Directory: {self.clone_dir}
-        Prefix: {self.prefix}
-
-        Called sub-function: {self.call_function}
-        Deletions Requested: {len(self.proj_delete)}
-        Additions requested: {len(self.proj_install)}
-
-        Optional Flags:
-        Risk Root: {self.risk}
-        Only Pull: {self.pull}
-        Don't Update: {self.stale}
-        Verbose Debugging: {self.verbose}
-
-        '''
-
-def cli() -> DefConfig:
+def cli() -> argparse.ArgumentParser:
     '''
     Parse command line arguments
+
+    Args:
+        config: configuration to be modified by command line inputs
+
+    Returns:
+        modified ``confing``
+
     '''
     description = '''
-    NOTICE: This is only intended for "user" installs.
+
+    \033[1;91mNOTICE: This is only intended for "user" packages.
     CAUTION: DO NOT RUN THIS SCRIPT AS ROOT.
-    CAUTION: If you still insist, I won't care.
+    CAUTION: If you still insist, I won't care.\033[0m
     '''
+
+
     homedir = os.environ['HOME']
-    parser = ArgumentParser(description=description,
-                            formatter_class=RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter
+    )
     sub_parsers = parser.add_subparsers()
     list_gits = sub_parsers.add_parser(
         'list', aliases=['info'],
@@ -117,6 +65,9 @@ def cli() -> DefConfig:
     )
     version = sub_parsers.add_parser('version', aliases=['ver'],
                                      help='display version and exit')
+    unlock = sub_parsers.add_parser('unlock', aliases=[],
+                                     help='unlock C_DIR and exit')
+    unlock.set_defaults(call_function='unlock')
     parser.set_defaults(call_function=None)
     list_gits.set_defaults(call_function='info')
     version.set_defaults(call_function='version')
@@ -128,62 +79,57 @@ def cli() -> DefConfig:
                         help='display list in verbose form')
     parser.add_argument('-s', '--stale', action='store_true',
                         help='skip updates, let the repository remain stale')
-    parser.add_argument('-o', '--only-pull', action='store_true',
-                        help='only pull, do not try to install')
+    parser.add_argument('-O', '--only-pull', action='store_true',
+                        help='only pull, do not try to install',
+                        dest='pull')
     parser.add_argument('-f', '--force-risk', action='store_true', dest='risk',
                         help='force working with root permissions [DANGEROUS]')
     parser.add_argument(
+        '-p', '--prefix', type=str, nargs='?', metavar='PREFIX',
+        default=os.path.join(homedir, ".pspman"),
+        help='path for installation' +
+        f'[default: {os.path.join(homedir, ".pspman")}]')
+    parser.add_argument(
         '-c', '--clone-dir', type=str, nargs='?', metavar='C_DIR',
-        default=f'{homedir}/.pspman',
-        help=f'Clone git repos in C_DIR/src [default: {homedir}/.pspman]'
+        default=None,
+        help=f'Clone git repos in C_DIR [default: PREFIX{os.sep}src]'
     )
     parser.add_argument(
-        '-p', '--prefix', type=str, nargs='?', metavar='PREFIX', default=None,
-        help='path for installation [default: C_DIR]'
-    )
-    parser.add_argument(
-        '-d', '--proj-delete', metavar='PROJ', type=str, nargs='*', default=[],
+        '-d', '--delete', metavar='PROJ', type=str, nargs='*', default=[],
         help='PROJ to clone new project'
     )
     parser.add_argument(
-        '-i', '--proj-install', metavar='URL', type=str, nargs='*', default=[],
-        help='URL to clone new project'
+        '-i', '--install', metavar='URL', type=str, nargs='*', default=[],
+        help=f'''
+format: "URL[[[___branch]___inst_argv]___sh_env]"
+
+* REMEMBER the QUOTATION MARKS *
+
+* URL: url to be cloned.
+* branch: custom branch to clone blank implies default.
+* inst_argv: custom arguments these are passed raw.
+* sh_env: VAR1=VAL1,VAR2=VAL2,VAR3=VAL3....
+
+'''
     )
+    return parser
+
+
+def cli_opts() -> typing.Dict[str, typing.Any]:
+    '''
+    Parse cli arguments to return its dict
+    '''
+    parser = cli()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
     if args.info:
         setattr(args, 'call_function', 'info')
     if args.version:
         setattr(args, 'call_function', 'version')
-    config = DefConfig()
-    args_dict = vars(args)
-    config.__dict__.update(vars(args))
-    return config
+    return vars(args)
 
 
-CONFIG = cli()  # set configurations
-'''
-standard configuration
-'''
-
-
-def prepare_env(CONFIG: DefConfig) -> int:
-    '''
-    Check permissions and create prefix and source directories
-
-    Returns:
-        Error code
-
-    '''
-    perm_err = permission_check(CONFIG=CONFIG)
-    if perm_err != 0:
-        return perm_err
-    os.makedirs(CONFIG.clone_dir, exist_ok=True)
-    os.makedirs(CONFIG.prefix, exist_ok=True)
-    return 0
-
-
-def perm_pass(permdir: str) -> int:
+def perm_pass(env: InstallEnv, permdir: str) -> int:
     '''
     Args:
         permdir: directory whose permissions are to be checked
@@ -192,12 +138,19 @@ def perm_pass(permdir: str) -> int:
         Error code: ``1`` if all rwx permissions are not granted
 
     '''
-    if not os.path.exists(permdir):
-        # clone/prefix directory will be created anew
+    if env.verbose:
+        print(f'Checking permissions for {permdir}')
+    while not os.path.exists(permdir):
+        # clone/prefix directory get be created anew
         permdir = os.path.split(os.path.realpath(permdir))[0]
-    stdout = process_comm('stat', '-L', '-c', "%U %G %a",
-                          permdir, fail_handle='report')
-    if stdout is None:
+        if env.verbose:
+            print(f'Checking permissions for the parent: {permdir}')
+    user = os.environ['USER']
+    stdout, stderr = subprocess.Popen(
+        ['stat', '-L', '-c', "%U %G %a", permdir], stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, text=True
+    ).communicate()
+    if stderr:
         print('Error checking directory permissions, aborting...', mark=5)
         return 1
     owner, group, octperm = stdout.replace("\n", '').split(' ')
@@ -206,29 +159,33 @@ def perm_pass(permdir: str) -> int:
         return 0
     if (octperm[-2] == '7') != 0:
         # some group has permissions
-        stdout = process_comm('groups', os.environ['USER'],
-                              fail_handle='report')
-        if stdout is None:
+        stdout, stderr = subprocess.Popen(
+            ['groups', user], text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ).communicate()
+        if stderr:
             # error
             print('Error checking group permissions, aborting...', mark=5)
             return 1
         user_groups = stdout.split(' ')
         for u_grp in user_groups:
             if u_grp == group:
-                return True
+                return 0
     if (octperm[-3] == '7') != 0:
         # owner has permissions
-        if os.environ['USER'] == owner:
+        if user == owner:
             return 0
-    print('We do not have sufficient permissions', mark=5)
+    print(f'''
+    We [{user}] do not have sufficient permissions [{octperm}]
+    on {owner}'s directory: {permdir}
+    ''', mark=5)
     print('Try another location', mark=2)
-    print('Bye', mark=0)
     return 1
 
 
-def permission_check(CONFIG: DefConfig) -> int:
+def prepare_env(env: InstallEnv) -> int:
     '''
-    Check permissions in the given context
+    Check permissions and create prefix and source directories
 
     Returns:
         Error code
@@ -236,7 +193,7 @@ def permission_check(CONFIG: DefConfig) -> int:
     # Am I root?
     if os.environ['USER'].lower() == 'root':
         print('I hate dictators', mark=3)
-        if not CONFIG.risk:
+        if not env.risk:
             print('Bye', mark=0)
             return 2
         print('I can only hope you know what you are doing...', mark=3)
@@ -246,9 +203,48 @@ def permission_check(CONFIG: DefConfig) -> int:
         print("¯\\_(ツ)_/¯ Your decision ¯\\_(ツ)_/¯", mark=3)
         print('', mark=0)
         print('Proceeding...', mark=1)
-        err = 0  # Obviously!
     else:
         # Is installation directory read/writable
-        err = perm_pass(CONFIG.clone_dir)
-        err += perm_pass(CONFIG.prefix)
-    return err
+        err = perm_pass(env=env, permdir=env.clone_dir)
+        err += perm_pass(env=env, permdir=env.prefix)
+        if err != 0:
+            print('Bye', mark=0)
+            return err
+    os.makedirs(env.clone_dir, exist_ok=True)
+    os.makedirs(env.prefix, exist_ok=True)
+    return 0
+
+
+def lock(env: InstallEnv, unlock: bool = False):
+    '''
+    Unlock up the directory
+
+    Args:
+        env: installation context
+        unlock: unlock existing locks?
+
+    Returns:
+        Error code
+
+    '''
+    lockfile = os.path.join(env.clone_dir, '.proc.lock')
+    if os.path.exists(lockfile):
+        # directory is locked
+        if unlock:
+            os.remove(lockfile)
+            return 0
+        with open(lockfile, 'r') as lock_fh:
+            print(f"Process with id {lock_fh.read()} is incomplete...",
+                  mark='err')
+        print("Either wait for the process to get completed")
+        print("OR interrupt the process and execute")
+        print(f"pspman -c {os.path.split(env.clone_dir)[0]} unlock",
+              mark='act')
+        print("This WILL generally MESS UP source codes.", mark='warn')
+        return 1
+    if unlock:
+        print(f'Lockfile {lockfile} not found.')
+        return 1
+    with open(lockfile, 'w') as lock_fh:
+        lock_fh.write(str(os.getpid()))
+    return 0

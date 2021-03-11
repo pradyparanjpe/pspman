@@ -29,11 +29,96 @@ import re
 from datetime import datetime
 import json
 import yaml
-from . import CONFIG
-from .psprint import print
+from psprint import print
 from .tag import ACTION_TAG
-from .shell import process_comm
 from .errors import TagError, GitURLError
+
+
+class InstallEnv():
+    '''
+    Installation variables
+
+    Attributes:
+        call_function: sub-function called {version,info,unlock}
+        clone_dir: base directory to clone src
+        prefix: [=``clone_dir``] `prefix` for installation
+        risk: risk root
+        pull: only pull, don't try to install
+        stale: do not update, only delete/install new
+        verbose: print semi-verbose output
+        install: install (clone) from remote urls
+        delete: delete projects
+
+
+    Args:
+        **kwargs: hard set `attributes`
+
+    '''
+    def __init__(self, **kwargs):
+        self.call_function: typing.Optional[str] = None
+        self._clone_dir: typing.Optional[str] = None
+        self._prefix: typing.Optional[str] = None
+        self.risk: bool = False
+        self.pull: bool = False
+        self.stale: bool = False
+        self.verbose: bool = False
+        self.install: typing.List[str] = []
+        self.delete: typing.List[str] = []
+        self.update(kwargs)
+
+    @property
+    def prefix(self) -> str:
+        if self._prefix is None:
+            self._prefix = os.path.join(os.environ['HOME'], ".pspman")
+        return self._prefix
+
+    @prefix.setter
+    def prefix(self, value):
+        self._prefix = value
+
+    @prefix.deleter
+    def prefix(self):
+        self._prefix = os.path.join(os.environ['HOME'], ".pspman")
+
+    @property
+    def clone_dir(self) -> str:
+        if self._clone_dir is None:
+            return os.path.join(self.prefix, 'src')
+        return self._clone_dir
+
+    @clone_dir.setter
+    def clone_dir(self, value):
+        self._clone_dir = value
+
+    @clone_dir.deleter
+    def clone_dir(self):
+        self._clone_dir = None
+
+    def __repr__(self) -> str:
+        return  f'''
+        Clone Directory: {self.clone_dir}
+        Prefix: {self.prefix}
+
+        Called sub-function: {self.call_function}
+        Deletions Requested: {len(self.delete)}
+        Additions requested: {len(self.install)}
+
+        Optional Flags:
+        Risk Root: {self.risk}
+        Only Pull: {self.pull}
+        Don't Update: {self.stale}
+        Verbose Debugging: {self.verbose}
+
+        '''
+
+    def update(self, options: typing.Dict[str, object]) -> 'InstallEnv':
+        '''
+        Update attributes with those from options
+        '''
+        for key, value in options.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        return self
 
 
 class GitProject():
@@ -41,27 +126,41 @@ class GitProject():
     Git project object.
 
     Args:
+        env: installation context
         url: url for git remote
         name: name of project folder
         **kwargs: hard set
 
-            * tag: override with custom tag
-            * data: load data
+            * tag: int: override with custom tag
+            * data: Dict[str, Any]: load data
+            * branch: str: git branch to be cloned
+            * sh_env: Dict[str, str]: shell env alterations for installation
+            * inst_argv: List[str]: arguments suffixed to optional args
+            * rest are ignored
 
     Attributes:
+        env: installation context
         url: url for git remote
         name: name of project folder
         tag: action tagged to project
+        branch: git branch to be cloned
+        sh_env: environ modifications before installation
+        inst_argv: arguments suffixed to optional args before positional args
         last_updated: last updated on datetime
 
     '''
     def __init__(self,
+                 env,
                  url: str = None,
                  name: str = None,
                  **kwargs) -> None:
+        self.env = env
         self.url = url
         self.tag = int(kwargs['tag']) if 'tag' in kwargs else 0
+        self.branch: typing.Optional[str] = kwargs.get('branch')
         self.last_updated: typing.Optional[datetime] = None
+        self.inst_argv: typing.List[str] = kwargs.get('inst_argv', [])
+        self.sh_env: typing.Dict[str, str] = kwargs.get('sh_env', {})
         if kwargs.get('data') is not None:
             self.merge(kwargs['data'])
         self.name = name or self.update_name()
@@ -104,7 +203,7 @@ class GitProject():
         if self.name is None:
             if self.update_name() is None:
                 raise GitURLError()
-        path = os.path.join(CONFIG.clone_dir, self.name)
+        path = os.path.join(self.env.clone_dir, self.name)
         if any(os.path.exists(os.path.join(path, make_sign)) for
                make_sign in ('Makefile', 'configure')):
             self.tag |= ACTION_TAG['make']
@@ -133,6 +232,9 @@ class GitProject():
         *** {self.name} ***
         Last Updated: {self.last_updated}
         Source: {self.url}
+        Branch: {self.branch}
+        Installation arguments: {self.inst_argv}
+        Altered shell environment variables: {self.sh_env}
         Base tag: {hex(self.tag)}
         '''
 
@@ -158,6 +260,7 @@ class PSPManDB():
     Database to store and load database
 
     Attributes:
+        env: installation context
         git_projects: list of database project
         fname: fname
 
@@ -168,8 +271,10 @@ class PSPManDB():
     '''
 
     def __init__(self,
+                 env: InstallEnv,
                  git_projects: typing.Dict[str, GitProject] = None,
                  fname: str = '.pman_db.yml') -> None:
+        self.env = env
         self.git_projects = git_projects or {}
         self.fname = fname
 
@@ -178,7 +283,7 @@ class PSPManDB():
         Find database file (yml) and load its contents
 
         '''
-        db_path = os.path.join(CONFIG.clone_dir, self.fname)
+        db_path = os.path.join(self.env.clone_dir, self.fname)
         if not os.path.isfile(db_path):
             return
         with open(db_path, 'r') as db_handle:
@@ -186,7 +291,7 @@ class PSPManDB():
 
         # Load Git Projects
         for name, gp_data in db.get('git_projects', {}).items():
-            self.git_projects[name] = GitProject(data=gp_data)
+            self.git_projects[name] = GitProject(env=self.env, data=gp_data)
 
     def save_db(self) -> None:
         '''
@@ -194,7 +299,7 @@ class PSPManDB():
 
         '''
         # Human readable is more transparent than easily decodable encoding
-        db_path = os.path.join(CONFIG.clone_dir, '.psp_db.yml')
+        db_path = os.path.join(self.env.clone_dir, '.psp_db.yml')
         if os.path.isfile(db_path):
             # old database file does exist
             # Copy a backup

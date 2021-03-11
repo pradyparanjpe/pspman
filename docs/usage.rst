@@ -1,10 +1,10 @@
 SYNOPSIS
 --------
 
-pspman -h
+.. argparse::
+   :ref: pspman.define.cli
+   :prog: pspman
 
-pspman [ -c DIR ] [ -p PREF ] [-f] [-o] [[-i URL] [-i URL]…] [[-d PROJ]
-[-d PROJ]…]
 
 Application
 ~~~~~~~~~~~~

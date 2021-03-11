@@ -24,10 +24,12 @@ Automated installations
 
 
 import os
+import typing
 from .shell import process_comm
 
 
-def install_make(code_path: str, prefix=str) -> bool:
+def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
+                 env: typing.Dict[str, str] = None) -> bool:
     '''
     Install repository using `pip`
 
@@ -39,22 +41,35 @@ def install_make(code_path: str, prefix=str) -> bool:
         ``False`` if error/failure during installation, else, ``True``
 
     '''
+    argv = argv or []
+    env = env or {}
+    incl = '-I' + os.path.join(prefix, 'include')
+    libs = '-L' + os.path.join(prefix, 'lib')
+    mod_env = os.environ.copy()
+    for var, val in env.items():
+        mod_env[var] = val
     configure = os.path.join(code_path, 'configure')
     makefile = os.path.join(code_path, 'Makefile')
     if os.path.exists(configure):
-        conf_out = process_comm(configure, '--prefix', prefix,
+        conf_out = process_comm(configure, '--prefix', prefix, *argv,
+                                env=mod_env,
                                 fail_handle='report')
-        if conf_out is not None:
-            if os.path.exists('./Makefile'):
-                make_out = process_comm('make', '-C', makefile,
-                                        fail_handle='report')
-                if make_out is not None:
-                    return not(process_comm('make', '-C', makefile,
-                                            'install', fail_handle='report'))
+        if conf_out is None:
+            return False
+    if os.path.exists('./Makefile'):
+        make_out = process_comm('make', incl, libs,
+                                '-C', makefile, env=mod_env,
+                                fail_handle='report')
+        if make_out is None:
+            return False
+        return not(process_comm('make', incl, libs,
+                                '-C', makefile, 'install',
+                                env=mod_env, fail_handle='report'))
     return False
 
 
-def install_pip(code_path: str, prefix=str) -> bool:
+def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
+                env: typing.Dict[str, str] = None) -> bool:
     '''
     Install repository using `pip`
 
@@ -66,20 +81,26 @@ def install_pip(code_path: str, prefix=str) -> bool:
         ``False`` if error/failure during installation, else, ``True``
 
     '''
+    argv = argv or []
+    env = env or {}
+    mod_env = os.environ.copy()
+    for var, val in env.items():
+        mod_env[var] = val
     requirements_file_path = os.path.join(code_path, 'requirements.txt')
     if os.path.exists(requirements_file_path):
         pip_req = process_comm(
-            'python', '-m', 'pip', 'install', '-U', '--user', '-r',
-            requirements_file_path, fail_handle='report')
+            'python', '-m', 'pip', 'install', '--prefix', prefix, '-U', '-r',
+            requirements_file_path, env=mod_env, fail_handle='report')
         if pip_req is None:
             return False
     return not(process_comm(
-        'python', '-m', 'pip', 'install', '--user', '-U',
-        code_path, fail_handle='report'
+        'python', '-m', 'pip', 'install', '--prefix', prefix, '-U', *argv,
+        code_path, env=mod_env, fail_handle='report'
     ))
 
 
-def install_meson(code_path: str, prefix=str) -> bool:
+def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
+                  env: typing.Dict[str, str] = None) -> bool:
     '''
     Install repository by building with `ninja/json`
 
@@ -90,29 +111,36 @@ def install_meson(code_path: str, prefix=str) -> bool:
     Returns:
         ``False`` if error/failure during installation, else, ``True``
     '''
+    argv = argv or []
+    env = env or {}
+    mod_env = os.environ.copy()
+    for var, val in env.items():
+        mod_env[var] = val
     update_dir = os.path.join(code_path, 'build', 'update')
     subproject_dir = os.path.join(code_path, 'subprojects')
     os.makedirs(subproject_dir, exist_ok=True)
-    _ = process_comm('pspman', '-c', subproject_dir,
-                     fail_handle='report')
+    _ = process_comm('pspman', '-c', subproject_dir, '-p', prefix,
+                     env=mod_env, fail_handle='report')
     os.makedirs(update_dir, exist_ok=True)
     build = process_comm('meson', '--wipe', '--buildtype=release',
-                         '--prefix', prefix, '-Db_lto=true', update_dir,
-                         code_path, fail_handle='report')
+                         '--prefix', prefix, *argv, '-Db_lto=true', update_dir,
+                         code_path, env=mod_env, fail_handle='report')
     if build is None:
         build = process_comm(
-            'meson', '--buildtype=release', '--prefix', prefix,
-            '-Db_lto=true', update_dir, code_path, fail_handle='report'
+            'meson', '--buildtype=release', '--prefix', prefix, *argv,
+            '-Db_lto=true', update_dir, code_path,
+            env=mod_env, fail_handle='report'
         )
 
     if build is None:
         return False
     return not(process_comm(
-        'meson', 'install', '-C', update_dir, fail_handle='report'
+        'meson', 'install', '-C', update_dir, env=mod_env, fail_handle='report'
     ))
 
 
-def install_go(code_path: str, prefix=str) -> bool:
+def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
+               env: typing.Dict[str, str] = None) -> bool:
     '''
     Install repository using `pip`
 
@@ -124,7 +152,11 @@ def install_go(code_path: str, prefix=str) -> bool:
         ``False`` if error/failure during installation, else, ``True``
 
     '''
-    myenv = os.environ.copy()
-    myenv['GOBIN'] = os.path.realpath(os.path.join(prefix, 'bin'))
-    return not(process_comm('go', 'install', '-i', '-pkgdir',
-                            code_path, fail_handle='report'))
+    argv = argv or []
+    env = env or {}
+    mod_env = os.environ.copy()
+    for var, val in env.items():
+        mod_env[var] = val
+    mod_env['GOBIN'] = os.path.realpath(os.path.join(prefix, 'bin'))
+    return not(process_comm('go', 'install', '-i', '-pkgdir', *argv,
+                            code_path, env=mod_env, fail_handle='report'))

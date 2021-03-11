@@ -22,7 +22,7 @@ Currently supports:
 Information
 ~~~~~~~~~~~
 
-This is still only an *aid*. A lot of work still needs to be done manually.
+This is still only an *aid*. A lot of work needs to be done manually.
 
 Order of Operation
 ~~~~~~~~~~~~~~~~~~
@@ -42,7 +42,8 @@ Used as default ``prefix`` and parent for default clone directory ``src``
 CAUTION
 -------
 
-This is a `personal, simple` package manager. Do NOT run it as ROOT. Never supply root password or sudo prefix unless you really know what you are doing.
+This is a `personal, simple` package manager. Do NOT run it as ROOT.
+Never supply root password or sudo prefix unless you really know what you are doing.
 
 BUGS
 ----

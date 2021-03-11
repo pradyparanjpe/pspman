@@ -2,7 +2,7 @@ PREREQUISITES
 -------------
 
 -  git
--  python3-pip
+-  python3
 
 INSTALL
 -------
@@ -20,6 +20,22 @@ This App might not work for you, since you didn’t have to pay for it.
 Linux
 ~~~~~
 
+git
+^^^
+
+-  copy from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
+
+.. code:: sh
+
+   wget https://github.com/pradyparanjpe/pspman/blob/master/install.sh
+   wget https://github.com/pradyparanjpe/pspman/blob/master/install.py
+
+-  Run Installation script
+
+.. code:: sh
+
+   bash ./install.sh install
+
 pip
 ^^^
 
@@ -29,20 +45,15 @@ pip
 
    pip install --user -U pspman
 
-git
-^^^
-
--  Clone `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
+- Create directories: ``${HOME}/.pspman``
+- arrange to export PYTHONPATH and PATH, ex. by adding to ``${HOME}/bashrc``:
 
 .. code:: sh
 
-   git clone https://github.com/pradyparanjpe/pspman.git && cd pspman
+   export PYTHONPATH="${HOME}/.pspman/lib/``$python_version``/site-packages:${PYTHONPATH}"
+   export PATH="${HOME}/.pspman/bin:${PYTHONPATH}"
 
--  Run Installation script
-
-.. code:: sh
-
-   bash ./install.sh install
+- You will have to update the ``$python_version`` every time python is updated.
 
 UNINSTALL
 ---------
@@ -51,15 +62,6 @@ UNINSTALL
 
 Linux
 ~~~~~
-
-pip
-^^^
-
--  Remove using pip
-
-.. code:: sh
-
-   pip uninstall -y pspman
 
 .. _git-1:
 
@@ -70,7 +72,18 @@ git
 
 .. code:: sh
 
-   cd pspman && bash install.sh uninstall
+   cd ${HOME}/.pspman/src/pspman && bash uninstall.sh
+
+pip
+^^^
+
+-  Remove using pip
+
+.. code:: sh
+
+   pip uninstall -y pspman
+
+- Remove corresponding configuration
 
 UPDATE
 ------

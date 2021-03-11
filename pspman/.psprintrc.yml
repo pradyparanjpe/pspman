@@ -1,0 +1,60 @@
+FLAGS:
+  pad: True
+  flush: True
+  short: False
+
+install:
+  pref: 'INSTALL'
+  pref_s: 'I'
+  pref_color: 'lg'
+  pref_bgcol: 'k'
+  text_color: 'g'
+
+delete:
+  pref: 'DELETE'
+  pref_s: 'D'
+  pref_color: 'ly'
+  pref_bgcol: 'k'
+  text_color: 'y'
+
+pull:
+  pref: 'CODE'
+  pref_s: 'C'
+  pref_color: 'lb'
+  pref_bgcol: 'k'
+  text_color: 'b'
+
+clone:
+  pref: 'CLONE'
+  pref_s: 'A'
+  pref_color: 'lc'
+  pref_bgcol: 'k'
+  text_color: 'c'
+
+finstall:
+  pref: '!INST'
+  pref_s: 'i'
+  pref_color: 'lr'
+  pref_bgcol: 'k'
+  text_color: 'r'
+
+fdelete:
+  pref: '!DELETE'
+  pref_s: 'd'
+  pref_color: 'lr'
+  pref_bgcol: 'k'
+  text_color: 'r'
+
+fpull:
+  pref: '!CODE'
+  pref_s: 'c'
+  pref_color: 'lr'
+  pref_bgcol: 'k'
+  text_color: 'r'
+
+fclone:
+  pref: '!CLONE'
+  pref_s: 'a'
+  pref_color: 'lr'
+  pref_bgcol: 'k'
+  text_color: 'r'

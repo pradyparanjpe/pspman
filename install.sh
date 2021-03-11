@@ -21,59 +21,43 @@
 # install pspman
 
 
-function add_to_path() {
-    dir_struct=( "bin" "share" "lib" "lib64" "include" "etc" "tmp" "src" )
-    if [[ ! $PATH =~ "${HOME}/.local/bin" ]]; then
-        echo "export PATH=\"\${PATH}:\${HOME}/.local/bin\"" >> "${HOME}/.bashrc"
-    fi
-    if [[ ! $PATH =~ "${HOME}/.pspman/bin" ]]; then
-        echo "export PATH=\"\${PATH}:\${HOME}/.pspman/bin\"" >> "${HOME}/.bashrc"
-    fi
-    source "${HOME}/.bashrc"
-    mkdir -p "${HOME}/.pspman"
-    for workdir in dir_struct; do
-        mkdir -p "${HOME}/.pspman/${workdir}"
-    done
-}
+if [[ ! -f "./install.py" ]]; then
+    wget https://github.com/pradyparanjpe/pspman/blob/master/install.py
+fi
+
 
 function get_pip() {
-    if ! test $(command -v pip); then
+    if ! test "$(command -v pip)"; then
         wget "https://bootstrap.pypa.io/get-pip.py"
         python3 "get-pip.py" --user
         rm get-pip.py
     fi
     echo "Updating pip"
-    python3 -m "pip" install --user -U pip
-}
-
-function get_pspman() {
-    echo "installing pspman"
-    python3 -m pip install --user -U pspman
+    python3 -m "pip" install --user -U pip setuptools wheel
 }
 
 function install() {
-    add_to_path
-    if ! test $(command -v python); then
+    if ! test "$(command -v python)"; then
         echo "Please install python3 first"
         exit 1
     fi
     get_pip
-    get_pspman
+    python3 ./install.py install
     echo "Updating Pspman"
-    python3 -m 'pspman' -i pspman
-}
-
-function restore_path() {
-    sed -i -e "s|^export PATH=\"\${PATH}:\${HOME}/.pspman/bin\"||" \
-        "${HOME}/.bashrc"
+    python3 -m pspman -s -i https://github.com/pradyparanjpe/pspman.git
+    python3 -m pip install --prefix "${HOME}/.pspman" "${HOME}/.pspman/src/pspman"
+    source ~/.bashrc
 }
 
 function del_pspman() {
+    oldpwd="${PWD}"
+    cd "${HOME}" || exit
     pip uninstall -y pspman
+    cd "$oldpwd"  || exit
 }
 
 function uninstall() {
-    restore_path
+    python3 ./install.py uninstall
     del_pspman
 }
 
