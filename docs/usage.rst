@@ -16,6 +16,7 @@ Application
    -  ``configure``, ``make``, ``make install``.
    -  ``pip --user -U install .`` .
    -  meson/ninja.
+   - go install
 
 -  Delete cloned directories [but not installation files]
 

@@ -146,6 +146,7 @@ class GitProject():
         branch: git branch to be cloned
         sh_env: environ modifications before installation
         inst_argv: arguments suffixed to optional args before positional args
+        pull: only pull this project, don't run install scripts
         last_updated: last updated on datetime
 
     '''
@@ -161,6 +162,7 @@ class GitProject():
         self.last_updated: typing.Optional[datetime] = None
         self.inst_argv: typing.List[str] = kwargs.get('inst_argv', [])
         self.sh_env: typing.Dict[str, str] = kwargs.get('sh_env', {})
+        self.pull: bool = False
         if kwargs.get('data') is not None:
             self.merge(kwargs['data'])
         self.name = name or self.update_name()
@@ -200,6 +202,9 @@ class GitProject():
         in the cloned directory
 
         '''
+        if self.pull:
+            self.tag &= 0x0F
+            return
         if self.name is None:
             if self.update_name() is None:
                 raise GitURLError()

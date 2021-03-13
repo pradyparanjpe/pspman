@@ -153,24 +153,27 @@ def del_projects(env: InstallEnv,
 def _parse_inst(inst_input: str) -> typing.Tuple[str,
                                                  typing.Optional[str],
                                                  typing.List[str],
-                                                 typing.Dict[str, str]]:
+                                                 typing.Dict[str, str],
+                                                 bool]:
     '''
     parse installation string to extract parts
     inst_input is assumed to be of the form:
 
     Format:
-        URL[[[___branch]___inst_argv]___sh_env]
+        URL[[[[___branch]___inst_argv]___sh_env]___'hold']
 
     Args:
         URL: str: url to be cloned
         branch: str: custom branch to clone blank implies default
         inst_argv: str: custom arguments these are passed raw
         sh_env: VAR1=VAL1,VAR2=VAL2,VAR3=VAL3...
+        pull_only: ``True``, 'hold', 'pull', 'only' => don't install this
 
     '''
     branch: typing.Optional[str] = None
     sh_env: typing.Dict[str, str] = {}
     inst_argv: typing.List[str] = []
+    pull: bool = False
     url, *args = inst_input.split("___")
     if args:
         branch, *args = args
@@ -186,7 +189,12 @@ ignoring", mark='warn')
                         continue
                     var, val = var_val.split("=")
                     sh_env[var] = val
-    return url, branch, inst_argv, sh_env
+                if args:
+                    pull_str, *args = args
+                    if str(pull_str).lower() in ('true', 'pull',
+                                                 'only', 'hold'):
+                        pull = True
+    return url, branch, inst_argv, sh_env, pull
 
 def add_projects(env: InstallEnv,
                  git_projects: typing.Dict[str, GitProject],
@@ -207,9 +215,9 @@ def add_projects(env: InstallEnv,
                                  fail=queues['fail'])
 
     for inst_input in to_add_list:
-        url, branch, inst_argv, sh_env = _parse_inst(inst_input)
+        url, branch, inst_argv, sh_env, pull = _parse_inst(inst_input)
         new_project = GitProject(env=env, url=url, sh_env=sh_env,
-                                 inst_argv=inst_argv, branch=branch)
+                                 inst_argv=inst_argv, branch=branch, pull=pull)
         if os.path.isfile(os.path.join(env.clone_dir,
                                        new_project.name)):
             # name is a file, use .d directory

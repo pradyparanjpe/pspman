@@ -1,9 +1,7 @@
 PSPMAN
 ------
 
-**P**\ ersonal **S**\ imple **P**\ ackage **Man**\ ager (pspman) - a package manager aid
-
-**P**\ ythonic **S**\ mall **P**\ ackage **Man**\ ager (pspman) - a package manager aid
+**PS**\ eudo **P**\ ackage **Man**\ ager (pspman) - a package manager aid
 
 DESCRIPTION
 -----------

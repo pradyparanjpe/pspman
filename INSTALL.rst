@@ -1,8 +1,11 @@
 PREREQUISITES
 -------------
 
--  git
--  python3
+- `git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`__
+- `python3 <https://www.python.org/downloads/>`__
+- `make <http://ftpmirror.gnu.org/make/>`__ (for ``make install``)
+- `go <https://golang.org/doc/install>`__ (for ``go install``)
+- `meson/ninja <https://mesonbuild.com/Getting-meson.html>`__ (for meson build, ninja install)
 
 INSTALL
 -------
@@ -16,14 +19,17 @@ Apple Mac
 ~~~~~~~~~
 
 This App might not work for you, since you didn’t have to pay for it.
+Also, it doesn't follow a `click-click-click done` approach. So, don't install it.
 
 Linux
 ~~~~~
 
+- REMEMBER, this is LGPLv3 (No warranty, your own risk, no guarantee of utility)
+
 git
 ^^^
 
--  copy from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
+-  copy installation scripts from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
 
 .. code:: sh
 
@@ -39,7 +45,7 @@ git
 pip
 ^^^
 
--  install using pip
+-  install using pip (Just because it is a python package)
 
 .. code:: sh
 
@@ -88,9 +94,24 @@ pip
 UPDATE
 ------
 
+Linux
+~~~~~
+
+git
+^^^
+
 (Use me to update myself) - Run a regular update on the folder in which
 pspman is cloned
 
 .. code:: sh
 
    pspman
+
+`That's all!`
+
+pip
+^^^
+
+.. code:: sh
+
+    pip install -U pspman
