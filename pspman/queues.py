@@ -356,6 +356,12 @@ class DeleteQueue(TermQueue):
         super().__init__(env=env, action=delete, q_type='delete',
                          success=success, fail=fail, **kwargs)
 
+    def on_success(self, project: GitProject):
+        '''
+        run on success
+        '''
+        if self.downstream_qs['success'] is not None:
+            self.downstream_qs['success'].add(None)
 
 class InstallQueue(PSPQueue):
     '''

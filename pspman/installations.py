@@ -62,7 +62,7 @@ def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
                                 fail_handle='report')
         if make_out is None:
             return False
-        return not(process_comm('make', incl, libs,
+        return bool(process_comm('make', incl, libs,
                                 '-C', makefile, 'install',
                                 env=mod_env, fail_handle='report'))
     return False
@@ -93,7 +93,7 @@ def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
             requirements_file_path, env=mod_env, fail_handle='report')
         if pip_req is None:
             return False
-    return not(process_comm(
+    return bool(process_comm(
         'python', '-m', 'pip', 'install', '--prefix', prefix, '-U', *argv,
         code_path, env=mod_env, fail_handle='report'
     ))
@@ -134,7 +134,7 @@ def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
 
     if build is None:
         return False
-    return not(process_comm(
+    return bool(process_comm(
         'meson', 'install', '-C', update_dir, env=mod_env, fail_handle='report'
     ))
 
@@ -158,5 +158,5 @@ def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
     for var, val in env.items():
         mod_env[var] = val
     mod_env['GOBIN'] = os.path.realpath(os.path.join(prefix, 'bin'))
-    return not(process_comm('go', 'install', '-i', '-pkgdir', *argv,
+    return bool(process_comm('go', 'install', '-i', '-pkgdir', *argv,
                             code_path, env=mod_env, fail_handle='report'))

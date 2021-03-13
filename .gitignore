@@ -142,3 +142,7 @@ cython_debug/
 
 # testing
 /test
+
+# pypi pushed
+pypi.sh
+

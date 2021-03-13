@@ -187,7 +187,7 @@ def install(
 
 
 def success(
-        args: typing.Tuple[InstallEnv, GitProject]
+        args: typing.Tuple[InstallEnv, typing.Optional[GitProject]]
 ) -> typing.Tuple[str, int, bool]:
     '''
     List successful projects
@@ -199,6 +199,8 @@ def success(
 
     '''
     env, project = args
+    if project is None:
+        return 'None', 0x00, True
     project.mark_update_time()
     print(f'{project.name} processed', mark='info')
     return project.name, project.tag, True
