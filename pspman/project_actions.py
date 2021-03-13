@@ -26,11 +26,48 @@ Actions on projects, other than automated installations
 import os
 import typing
 import re
+import yaml
 from . import print
 from .shell import git_comm
-from .classes import InstallEnv, GitProject, PSPManDB
+from .classes import InstallEnv, GitProject
 from .queues import (PSPQueue, PullQueue, FailQueue, CloneQueue, SuccessQueue,
                      DeleteQueue, InstallQueue)
+
+
+def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
+    '''
+    Find database file (yml) and load its contents
+
+    Args:
+        env: installation context
+        fname: name of database file to load
+
+    Returns:
+        registered gitprojects
+
+    '''
+    db_path = os.path.join(env.clone_dir, fname)
+    git_projects: typing.Dict[str, GitProject]= {}
+    if not os.path.isfile(db_path):
+        if not os.path.isfile(db_path + '.bak'):
+            # nothing found
+            return git_projects
+        # backup exists
+        with open(db_path + '.bak', 'r') as db_handle:
+             db = yaml.load(db_handle, Loader=yaml.Loader)
+    else:
+        # database file does exist
+        with open(db_path, 'r') as db_handle:
+            db = yaml.load(db_handle, Loader=yaml.Loader)
+
+        # Copy a backup
+        # Older backup (if it exists) is erased
+        os.rename(db_path, db_path + '.bak')
+
+    # Load Git Projects
+    for name, gp_data in db.items():
+        git_projects[name] = GitProject(data=gp_data)
+    return git_projects
 
 
 def find_gits(
@@ -52,8 +89,8 @@ def find_gits(
     # discover projects
     git_projects = git_projects or {}
     discovered_projects: typing.Dict[str, GitProject] = {}
-    read_db = PSPManDB(env=env)
-    read_db.load_db()
+    healthy_db = load_db(env=env, fname=f'.pspman.healthy.yml')
+    fail_db = load_db(env=env, fname=f'.pspman.fail.yml')
     for leaf in os.listdir(env.clone_dir):
         if not os.path.isdir(os.path.join(env.clone_dir, leaf)):
             continue
@@ -69,9 +106,9 @@ def find_gits(
             continue
         fetch: typing.List[str] = re.findall(r"^.*fetch.*", g_url)
         url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
-        discovered_projects[leaf] = GitProject(env=env, url=url, name=leaf)
-        discovered_projects[leaf].type_install()
-    git_projects.update({**discovered_projects, **read_db.git_projects})
+        discovered_projects[leaf] = GitProject(url=url, name=leaf)
+        discovered_projects[leaf].type_install(env=env)
+    git_projects.update({**discovered_projects, **healthy_db, **fail_db})
     return git_projects
 
 
@@ -216,7 +253,7 @@ def add_projects(env: InstallEnv,
 
     for inst_input in to_add_list:
         url, branch, inst_argv, sh_env, pull = _parse_inst(inst_input)
-        new_project = GitProject(env=env, url=url, sh_env=sh_env,
+        new_project = GitProject(url=url, sh_env=sh_env,
                                  inst_argv=inst_argv, branch=branch, pull=pull)
         if os.path.isfile(os.path.join(env.clone_dir,
                                        new_project.name)):

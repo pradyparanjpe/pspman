@@ -19,6 +19,17 @@
 '''
 parallel threading/multithreading operations
 
+All `actions` accept same set of args and return same type of object
+
+args:
+    * env: action context
+    * project: project on which action is requested
+
+Returns:
+    * project.name for indexing
+    * project.tag feedback to update parent
+    * success of action to inform parent
+
 '''
 
 
@@ -27,7 +38,7 @@ import typing
 import shutil
 from . import print
 from .shell import git_comm
-from .classes import InstallEnv, GitProject, PSPManDB
+from .classes import InstallEnv, GitProject
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION
 from .installations import install_make, install_pip, install_meson, install_go
 
@@ -93,7 +104,7 @@ def clone(
         # STDERR thrown
         print(f'Failed to clone source of {project.name}', mark='fclone')
         return (project.name, project.tag, False)
-    project.type_install()
+    project.type_install(env=env)
     if env.verbose:
         print(f'{project.name} cloned', mark='clone')
     tag = (project.tag | ACTION_TAG['install']) & (0xff - ACTION_TAG['pull'])
@@ -187,7 +198,6 @@ def success(
             * project: project to delete
 
     '''
-    # TODO: push data back to parent to update the database
     env, project = args
     project.mark_update_time()
     print(f'{project.name} processed', mark='info')
@@ -218,4 +228,4 @@ def failure(
         print("Failed", project.name, mark='fpull')
     elif project.tag & ACTION_TAG['delete']:
         print("Failed", project.name, mark='fdelete')
-    return project.name, project.tag, True
+    return project.name, project.tag, False

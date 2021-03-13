@@ -26,7 +26,7 @@ object classes
 import os
 import typing
 import re
-from datetime import datetime
+from datetime import timezone, datetime
 import json
 import yaml
 from psprint import print
@@ -126,7 +126,6 @@ class GitProject():
     Git project object.
 
     Args:
-        env: installation context
         url: url for git remote
         name: name of project folder
         **kwargs: hard set
@@ -139,7 +138,6 @@ class GitProject():
             * rest are ignored
 
     Attributes:
-        env: installation context
         url: url for git remote
         name: name of project folder
         tag: action tagged to project
@@ -151,15 +149,13 @@ class GitProject():
 
     '''
     def __init__(self,
-                 env,
                  url: str = None,
                  name: str = None,
                  **kwargs) -> None:
-        self.env = env
         self.url = url
         self.tag = int(kwargs['tag']) if 'tag' in kwargs else 0
         self.branch: typing.Optional[str] = kwargs.get('branch')
-        self.last_updated: typing.Optional[datetime] = None
+        self.last_updated: typing.Optional[float] = None
         self.inst_argv: typing.List[str] = kwargs.get('inst_argv', [])
         self.sh_env: typing.Dict[str, str] = kwargs.get('sh_env', {})
         self.pull: bool = False
@@ -196,19 +192,21 @@ class GitProject():
         for key, val in data.items():
             self.__dict__[key] = self.__dict__.get(key) or val
 
-    def type_install(self) -> None:
+    def type_install(self, env: InstallEnv) -> None:
         '''
         Determine guess the installation type based on files present
         in the cloned directory
 
+        Args:
+            env: context in which, type of installation is called
         '''
-        if self.pull:
+        if env.pull or self.pull:
             self.tag &= 0x0F
             return
         if self.name is None:
             if self.update_name() is None:
                 raise GitURLError()
-        path = os.path.join(self.env.clone_dir, self.name)
+        path = os.path.join(env.clone_dir, self.name)
         if any(os.path.exists(os.path.join(path, make_sign)) for
                make_sign in ('Makefile', 'configure')):
             self.tag |= ACTION_TAG['make']
@@ -227,20 +225,23 @@ class GitProject():
         Mark that the project was updated
 
         '''
-        self.last_updated = datetime.now()
+        self.last_updated = datetime.now().timestamp()
 
     def __repr__(self) -> str:
         '''
         representation of GitProject object
         '''
+        updated = datetime.fromtimestamp(self.last_updated)\
+            if self.last_updated else None
         return f'''
         *** {self.name} ***
-        Last Updated: {self.last_updated}
+        Last Updated: {updated}
         Source: {self.url}
         Branch: {self.branch}
         Installation arguments: {self.inst_argv}
         Altered shell environment variables: {self.sh_env}
         Base tag: {hex(self.tag)}
+        Pull: {self.pull}
         '''
 
     def __str__(self) -> str:
@@ -260,63 +261,4 @@ class GitProjectListEncoder(json.JSONEncoder):
         return o.__dict__
 
 
-class PSPManDB():
-    '''
-    Database to store and load database
 
-    Attributes:
-        env: installation context
-        git_projects: list of database project
-        fname: fname
-
-    Args:
-        git_projects: project
-        fname: fname
-
-    '''
-
-    def __init__(self,
-                 env: InstallEnv,
-                 git_projects: typing.Dict[str, GitProject] = None,
-                 fname: str = '.pman_db.yml') -> None:
-        self.env = env
-        self.git_projects = git_projects or {}
-        self.fname = fname
-
-    def load_db(self) -> None:
-        '''
-        TODO: Not implemented yet
-        NEXT: Success_q returns state of ``GitProject``, stores state as DB
-        Find database file (yml) and load its contents
-
-        '''
-        db_path = os.path.join(self.env.clone_dir, self.fname)
-        if not os.path.isfile(db_path):
-            return
-        with open(db_path, 'r') as db_handle:
-            db = yaml.load(db_handle, Loader=yaml.Loader)
-
-        # Load Git Projects
-        for name, gp_data in db.get('git_projects', {}).items():
-            self.git_projects[name] = GitProject(env=self.env, data=gp_data)
-
-    def save_db(self) -> None:
-        '''
-        TODO: Not implemented yet
-        NEXT: Success_q returns state of ``GitProject``, stores state as DB
-        Save current information as yaml database file
-
-        '''
-        # Human readable is more transparent than easily decodable encoding
-        db_path = os.path.join(self.env.clone_dir, '.psp_db.yml')
-        if os.path.isfile(db_path):
-            # old database file does exist
-            # Copy a backup
-            # Older backup (if it exists) is erased
-            os.rename(db_path, db_path + '.bak')
-        gp_data = {}
-        # dump git projects' data attributes
-        for name, project in self.git_projects.items():
-            gp_data[name] = project.__dict__
-        with open(db_path, 'w') as db_handle:
-            yaml.dump({'git_projects': gp_data}, db_handle)

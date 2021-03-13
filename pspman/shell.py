@@ -105,7 +105,8 @@ def git_comm(clone_dir: str, action: str = None, url: str = None,
         return None
     cmd: typing.List[str] = ['git', '-C']
     git_args: typing.Dict[str, typing.Tuple[str, ...]] = {
-        'clone': (os.path.split(clone_dir)[0], 'clone', url, name),
+        'clone': (os.path.split(clone_dir)[0],  # type: ignore
+                  'clone', url, name),
         'list': (clone_dir, 'remote', '-v'),
         'pull': (clone_dir, 'pull', '--recurse-submodules'),
     }

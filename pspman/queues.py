@@ -34,6 +34,7 @@ import threading
 import random
 import tempfile
 import json
+import yaml
 from . import print
 from .classes import InstallEnv, GitProject, GitProjectListEncoder
 from .actions import delete, clone, update, install, success, failure
@@ -155,13 +156,24 @@ class PSPQueue:
                 del self.queue[res[0]]
                 project.tag = res[-2]
                 if res[-1]:
-                    if self.downstream_qs['success'] is not None:
-                        self.downstream_qs['success'].add(project)
+                    self.on_success(project)
                 else:
-                    if self.downstream_qs['fail'] is not None:
-                        self.downstream_qs['fail'].add(project)
-
+                    self.on_fail(project)
         self._running = False
+
+    def on_success(self, project: GitProject):
+        '''
+        run on success
+        '''
+        if self.downstream_qs['success'] is not None:
+            self.downstream_qs['success'].add(project)
+
+    def on_fail(self, project: GitProject):
+        '''
+        run on failure
+        '''
+        if self.downstream_qs['fail'] is not None:
+            self.downstream_qs['fail'].add(project)
 
     def done(self, caller: 'PSPQueue' = None) -> None:  # type: ignore
         '''
@@ -237,7 +249,7 @@ class PSPQueue:
             if chunk == 0:
                 # input closed
                 return True
-            self.queue = {name: GitProject(env=self.env, data=project_data)
+            self.queue = {name: GitProject(data=project_data)
                           for name, project_data in
                           json.loads(pipe.recv(chunk).decode('utf-8')).items()}
         except socket.timeout:
@@ -254,12 +266,13 @@ class PSPQueue:
         if project:
             self.queue[project.name] = project
         try:
-            to_yml = json.dumps(
+            to_json = json.dumps(
                 self.queue,
                 cls=GitProjectListEncoder
             ).encode('utf-8')
-            self._client.send(len(to_yml).to_bytes(length=64, byteorder='big'))
-            self._client.send(to_yml)
+            self._client.send(len(to_json).to_bytes(length=64,
+                                                    byteorder='big'))
+            self._client.send(to_json)
             self.queue = {}
         except socket.timeout:
             print('Server child did\'t respond...', mark='info')
@@ -294,16 +307,47 @@ class FailQueue(PSPQueue):
         super().__init__(env=env, action=failure, q_type='fail', **kwargs)
 
 
-class SuccessQueue(PSPQueue):
+class TermQueue(PSPQueue):
+    '''
+    Terminal queues that do not have a downstream action queue
+
+    Attributes:
+        registry: Log held by child process about action success/failure
+
+    '''
+    def __init__(self, env: InstallEnv, action: typing.Callable,
+                 q_type: str = 'terminal', **kwargs):
+        super().__init__(env=env, action=action, q_type=q_type, **kwargs)
+        self.registry: typing.List[GitProject] = []
+
+    def on_success(self, project: GitProject):
+        '''
+        Child: store GitProject state
+        '''
+        with open(os.path.join(self.env.clone_dir,
+                               '.pspman.healthy.yml'), 'a') as db_handle:
+            yaml.dump({project.name: project.__dict__}, db_handle)
+
+    def on_failure(self, project: GitProject):
+        '''
+        Child: store GitProject state
+        '''
+        with open(os.path.join(self.env.clone_dir,
+                               '.pspman.fail.yml'), 'a') as db_handle:
+            yaml.dump({project.name: project.__dict__}, db_handle)
+
+
+class SuccessQueue(TermQueue):
 
     '''
     Queue to reguster Successful objects
+
     '''
     def __init__(self, env: InstallEnv, **kwargs):
         super().__init__(env=env, action=success, q_type='success', **kwargs)
 
 
-class DeleteQueue(PSPQueue):
+class DeleteQueue(TermQueue):
     '''
     Queue for projects to delete
     '''
@@ -332,6 +376,14 @@ class PullQueue(PSPQueue):
         super().__init__(env=env, action=update, q_type='pull',
                          success=success, fail=fail, **kwargs)
 
+    def on_success(self, project: GitProject):
+        '''
+        run on success
+        '''
+        project.mark_update_time()
+        if self.downstream_qs['success'] is not None:
+            self.downstream_qs['success'].add(project)
+
 
 class CloneQueue(PSPQueue):
     '''
@@ -341,3 +393,11 @@ class CloneQueue(PSPQueue):
                  fail: PSPQueue, **kwargs):
         super().__init__(env=env, action=clone, q_type='clone',
                          success=success, fail=fail, **kwargs)
+
+    def on_success(self, project: GitProject):
+        '''
+        run on success
+        '''
+        project.mark_update_time()
+        if self.downstream_qs['success'] is not None:
+            self.downstream_qs['success'].add(project)
