@@ -26,8 +26,8 @@ Linux
 
 - REMEMBER, this is LGPLv3 (No warranty, your own risk, no guarantee of utility)
 
-git
-^^^
+using git
+^^^^^^^^^
 
 -  copy installation scripts from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
 
@@ -42,8 +42,8 @@ git
 
    bash ./install.sh install
 
-pip
-^^^
+using pip
+^^^^^^^^^
 
 -  install using pip (Just because it is a python package)
 
@@ -71,8 +71,8 @@ Linux
 
 .. _git-1:
 
-git
-^^^
+using git
+^^^^^^^^^
 
 -  Run (Un)Installation script
 
@@ -80,8 +80,8 @@ git
 
    cd ${HOME}/.pspman/src/pspman && bash uninstall.sh
 
-pip
-^^^
+using pip
+^^^^^^^^^
 
 -  Remove using pip
 
@@ -97,8 +97,8 @@ UPDATE
 Linux
 ~~~~~
 
-git
-^^^
+using git
+^^^^^^^^^
 
 (Use me to update myself): Run a regular update on the folder in which pspman is cloned
 
@@ -108,8 +108,8 @@ git
 
 `That's all!`
 
-pip
-^^^
+using pip
+^^^^^^^^^
 
 .. code:: sh
 

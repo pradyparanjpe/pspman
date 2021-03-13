@@ -8,6 +8,17 @@ DESCRIPTION
 
 Manage git-cloned and installed packages.
 
+Documentation
+-------------
+
+|Documentation Status|
+
+Source Code
+-----------
+
+|source| `Repository <https://github.com/pradyparanjpe/pspman.git>`__
+
+
 Currently supports:
 ~~~~~~~~~~~~~~~~~~~
 
@@ -47,3 +58,8 @@ BUGS
 ----
 
 May mess up root file system. Do not use as ROOT.
+
+.. |Documentation Status| image:: https://readthedocs.org/projects/pspman/badge/?version=latest
+   :target: https://pspman.readthedocs.io/?badge=latest
+.. |source| image:: https://github.githubassets.com/favicons/favicon.png
+   :target: https://github.com/pradyparanjpe/pspman.git
