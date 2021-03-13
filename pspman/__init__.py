@@ -18,7 +18,7 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-PSPMAN: personal service package manager
+PSPMAN: **PS**\ eudo **P**\ ackage **Man**\ ager
 
 '''
 

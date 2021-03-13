@@ -285,6 +285,8 @@ class PSPManDB():
 
     def load_db(self) -> None:
         '''
+        TODO: Not implemented yet
+        NEXT: Success_q returns state of ``GitProject``, stores state as DB
         Find database file (yml) and load its contents
 
         '''
@@ -300,6 +302,8 @@ class PSPManDB():
 
     def save_db(self) -> None:
         '''
+        TODO: Not implemented yet
+        NEXT: Success_q returns state of ``GitProject``, stores state as DB
         Save current information as yaml database file
 
         '''

@@ -87,21 +87,23 @@ def cli() -> argparse.ArgumentParser:
     parser.add_argument(
         '-p', '--prefix', type=str, nargs='?', metavar='PREFIX',
         default=os.path.join(homedir, ".pspman"),
-        help='path for installation' +
+        help='path for installation ' +
         f'[default: {os.path.join(homedir, ".pspman")}]')
     parser.add_argument(
         '-c', '--clone-dir', type=str, nargs='?', metavar='C_DIR',
         default=None,
-        help=f'Clone git repos in C_DIR [default: PREFIX{os.sep}src]'
+        help=f'''Clone git repos in C_DIR. Is it exported with PATH
+        [default: PREFIX{os.sep}src]
+        '''
     )
     parser.add_argument(
         '-d', '--delete', metavar='PROJ', type=str, nargs='*', default=[],
-        help='PROJ to clone new project'
+        help='delete PROJ'
     )
     parser.add_argument(
         '-i', '--install', metavar='URL', type=str, nargs='*', default=[],
         help=f'''
-format: "URL[[[___branch]___inst_argv]___sh_env]"
+format: "URL[[[[___branch]___inst_argv]___sh_env]___'only']"
 
 * REMEMBER the QUOTATION MARKS *
 
@@ -109,6 +111,7 @@ format: "URL[[[___branch]___inst_argv]___sh_env]"
 * branch: custom branch to clone blank implies default.
 * inst_argv: custom arguments these are passed raw.
 * sh_env: VAR1=VAL1,VAR2=VAL2,VAR3=VAL3....
+* pull_only: 'True', 'only', 'pull', 'hold' => Don't try to install this URL
 
 '''
     )

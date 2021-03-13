@@ -7,7 +7,7 @@ SYNOPSIS
 
 
 Application
-~~~~~~~~~~~~
+-----------
 
 -  Clone and install git projects.
 -  Update existing git projects.
@@ -24,54 +24,6 @@ Recommendation
 ~~~~~~~~~~~~~~
 
 Create multiple Clone Directories (argument ``-c``) as package groups that update together.
-
-OPTIONS
--------
-
--h, –-help
-~~~~~~~~~~
-
-View usage and help message
-
--c, –-clone-dir DIR
-~~~~~~~~~~~~~~~~~~~
-
-Path for all git clones [default:${HOME}/programs]
-
--p, –-prefix PREF
-~~~~~~~~~~~~~~~~~
-
-Path for installation [default:${HOME}]
-
--f, –-force-root
-~~~~~~~~~~~~~~~~
-
-Force working with root permission [DISCOURAGED]
-
--s, --stale
-~~~~~~~~~~~
-
-Skip updates, let the repository remain stale
-
--o, –-only-pull
-~~~~~~~~~~~~~~~
-
-Only pull, don’t try to install
-
--i, –-install URL
-~~~~~~~~~~~~~~~~~
-
-URL to clone new project
-
--d, -–delete PROJ
-~~~~~~~~~~~~~~~~~
-
-Delete PROJ
-
--l, --list-projs
-~~~~~~~~~~~~~~~~
-
-Display list of installed repositories and exit
 
 EXAMPLES
 --------

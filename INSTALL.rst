@@ -15,8 +15,8 @@ Windows
 
 Sorry
 
-Apple Mac
-~~~~~~~~~
+Apple
+~~~~~
 
 This App might not work for you, since you didn’t have to pay for it.
 Also, it doesn't follow a `click-click-click done` approach. So, don't install it.
@@ -52,7 +52,7 @@ pip
    pip install --user -U pspman
 
 - Create directories: ``${HOME}/.pspman``
-- arrange to export PYTHONPATH and PATH, ex. by adding to ``${HOME}/bashrc``:
+- arrange to export PYTHONPATH and PATH, Ex. by adding to ``${HOME}/.bashrc``:
 
 .. code:: sh
 
@@ -74,7 +74,7 @@ Linux
 git
 ^^^
 
--  Run Installation script
+-  Run (Un)Installation script
 
 .. code:: sh
 
@@ -100,8 +100,7 @@ Linux
 git
 ^^^
 
-(Use me to update myself) - Run a regular update on the folder in which
-pspman is cloned
+(Use me to update myself): Run a regular update on the folder in which pspman is cloned
 
 .. code:: sh
 

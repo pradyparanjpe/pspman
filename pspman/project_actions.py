@@ -160,7 +160,7 @@ def _parse_inst(inst_input: str) -> typing.Tuple[str,
     inst_input is assumed to be of the form:
 
     Format:
-        URL[[[[___branch]___inst_argv]___sh_env]___'hold']
+        URL[[[[___branch]___inst_argv]___sh_env]___'only']
 
     Args:
         URL: str: url to be cloned
