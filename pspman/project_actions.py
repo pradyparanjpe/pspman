@@ -161,10 +161,11 @@ def init_queues(env: InstallEnv,) -> typing.Dict[str, PSPQueue]:
     return queues
 
 
-def del_projects(env: InstallEnv,
-                 git_projects: typing.Dict[str, GitProject],
-                 queues: typing.Dict[str, PSPQueue],
-                 del_list: typing.List[str] = None) -> None:
+def del_projects(
+        env: InstallEnv, git_projects: typing.Dict[str, GitProject],
+        queues: typing.Dict[str, PSPQueue],
+        del_list: typing.List[str] = None
+) -> typing.Dict[str, GitProject]:
     '''
     Delete given project
 
@@ -173,6 +174,9 @@ def del_projects(env: InstallEnv,
         git_projects: known git projects
         queues: initiated queues
         del_list: list of names of project directories to be removed
+
+    Returns:
+        Updated registry of GitProjects
 
     '''
     del_list = del_list or []
@@ -184,7 +188,9 @@ def del_projects(env: InstallEnv,
             continue
         project = git_projects[project_name]
         queues['delete'].add(project)
+        del git_projects[project_name]
     queues['delete'].done()
+    return git_projects
 
 
 def _parse_inst(inst_input: str) -> typing.Tuple[str,
@@ -233,10 +239,11 @@ ignoring", mark='warn')
                         pull = True
     return url, branch, inst_argv, sh_env, pull
 
-def add_projects(env: InstallEnv,
-                 git_projects: typing.Dict[str, GitProject],
-                 queues: typing.Dict[str, PSPQueue],
-                 to_add_list: typing.List[str] = None) -> None:
+def add_projects(
+        env: InstallEnv, git_projects: typing.Dict[str, GitProject],
+        queues: typing.Dict[str, PSPQueue],
+        to_add_list: typing.List[str] = None
+) -> None:
     '''
     Add a project with given url
 
@@ -250,7 +257,7 @@ def add_projects(env: InstallEnv,
     to_add_list = to_add_list or []
     queues['clone'] = CloneQueue(env=env, success=queues['install'],
                                  fail=queues['fail'])
-
+    added_projects: typing.List[str] = []
     for inst_input in to_add_list:
         url, branch, inst_argv, sh_env, pull = _parse_inst(inst_input)
         new_project = GitProject(url=url, sh_env=sh_env,
@@ -261,11 +268,17 @@ def add_projects(env: InstallEnv,
             print(f"A file named '{new_project}' already exists", mark=3)
             new_project.name += '.d'
             print(f"Calling this project '{new_project}'", mark=3)
-        if git_projects.get(str(new_project)):
+        if git_projects.get(new_project.name):
             # url leaf has been cloned already
             print(f"{new_project} appears to be installed already", mark=3)
             print("I won't overwrite", mark=0)
             continue
+        if new_project.name in added_projects:
+            print(f"Same name was discovered for a previously added project",
+                  mark=3)
+            print("I won't overwrite", mark=0)
+            continue
+        added_projects.append(new_project.name)
         queues['clone'].add(new_project)
     queues['clone'].done()
 

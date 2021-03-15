@@ -72,11 +72,11 @@ def call() -> int:
     queues = init_queues(env=env)
     try:
         if env.delete:
-            del_projects(env=env, git_projects=git_projects, queues=queues,
-                         del_list=env.delete)
+            git_projects = del_projects(env=env, git_projects=git_projects,
+                                        queues=queues, del_list=env.delete)
         if env.install:
-            add_projects(env=env, git_projects=git_projects, queues=queues,
-                         to_add_list=env.install)
+            add_projects(env=env, git_projects=git_projects,
+                         queues=queues, to_add_list=env.install)
         if not env.stale:
             update_projects(env=env, git_projects=git_projects, queues=queues)
         else:
