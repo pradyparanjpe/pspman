@@ -26,7 +26,7 @@ inst_temp_dir="${pspbase}/pspman_install_temp"
 
 
 function already_installed() {
-    if ! test "command -v pspman >> /dev/null"; then
+    if test "command -v pspman >> /dev/null"; then
         echo -e "
         \033[0;91mPSPMAN is already installed:\033[0m
         $( pspman version ) .
@@ -36,7 +36,7 @@ function already_installed() {
 
         1) Uninstall pspman using \033[1;97;40mpip\033[0m: type without '# ':
 
-        \033[0;97;40m# until ! command -v pspman >/dev/null; \
+        \033[0;97;40m# until command -v pspman >/dev/null; \
 do pip uninstall -y pspman >/dev/null; done\033[0m
 
         2) Remove pspman clone from its standard location: type without '# ':
@@ -183,8 +183,10 @@ function install() {
         check_dep "${dep}"
     done
 
-    wget "https://raw.githubusercontent.com/pradyparanjpe/\
+    if [[ ! -f "_install.py" ]]; then
+        wget "https://raw.githubusercontent.com/pradyparanjpe/\
 pspman/master/install_scripts/_install.py" || inst_fail "pspman (download)"
+    fi
 
 
     python3 ./_install.py doinstall || \
@@ -211,7 +213,8 @@ function del_pspman() {
     oldpwd="${PWD}"
     cd "${HOME}" || exit
     count=10
-    until ! pip uninstall -y pspman >>/dev/null; do
+    until command -v pspman >/dev/null; do
+        pip uninstall -y pspman >>/dev/null
         if [[ $count -lt 1 ]]; then
             exit 1
         fi

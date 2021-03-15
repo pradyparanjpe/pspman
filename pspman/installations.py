@@ -89,12 +89,12 @@ def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
     requirements_file_path = os.path.join(code_path, 'requirements.txt')
     if os.path.exists(requirements_file_path):
         pip_req = process_comm(
-            'python', '-m', 'pip', 'install', '--prefix', prefix, '-U', '-r',
+            'python3', '-m', 'pip', 'install', '--prefix', prefix, '-U', '-r',
             requirements_file_path, env=mod_env, fail_handle='report')
         if pip_req is None:
             return False
     return bool(process_comm(
-        'python', '-m', 'pip', 'install', '--prefix', prefix, '-U', *argv,
+        'python3', '-m', 'pip', 'install', '--prefix', prefix, '-U', *argv,
         code_path, env=mod_env, fail_handle='report'
     ))
 
