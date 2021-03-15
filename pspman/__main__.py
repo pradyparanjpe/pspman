@@ -55,12 +55,12 @@ def call() -> int:
         lock(env=env, unlock=True)
         return 0
 
-    if lock(env):
-        return 1
-
     env_err = prepare_env(env)
     if env_err != 0:
         return env_err
+
+    if lock(env):
+        return 1
 
     if env.verbose:
         print(env, mark='bug')
