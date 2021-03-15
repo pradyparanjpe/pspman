@@ -55,7 +55,7 @@ class PSPQueue:
         upstream_qs: upstream queues feeding to this queue
         q_type: type of queue
         pid: pid of child process
-        closed: Is the queue closed? (called function ``done``)
+        closed: Is the queue closed? (set by function ``done``)
 
     Args:
         env: installation context
@@ -158,7 +158,7 @@ class PSPQueue:
                 if res[-1]:
                     self.on_success(project)
                 else:
-                    self.on_fail(project)
+                    self.on_failure(project)
         self._running = False
 
     def on_success(self, project: GitProject):
@@ -168,7 +168,7 @@ class PSPQueue:
         if self.downstream_qs['success'] is not None:
             self.downstream_qs['success'].add(project)
 
-    def on_fail(self, project: GitProject):
+    def on_failure(self, project: GitProject):
         '''
         run on failure
         '''
@@ -393,7 +393,7 @@ class PullQueue(PSPQueue):
 
 class CloneQueue(PSPQueue):
     '''
-    Queue of projects to install
+    Queue of projects to clone
     '''
     def __init__(self, env: InstallEnv, success: PSPQueue,
                  fail: PSPQueue, **kwargs):

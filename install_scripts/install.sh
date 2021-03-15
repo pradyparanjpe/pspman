@@ -21,9 +21,37 @@
 # install pspman
 
 
-if [[ ! -f "./install.py" ]]; then
-    wget https://github.com/pradyparanjpe/pspman/blob/master/install.py
-fi
+function background_check() {
+    if test "command -v pspman >> /dev/null"; then
+        echo -e "
+        \033[0;91mPSPMAN is already installed:\033[0m
+        $( pspman version ) .
+
+
+        \033[0;94mIf you wish to install afresh...\033[0m
+
+        1) Uninstall pspman using \033[1;97;40mpip\033[0m: type without '# ':
+
+        \033[0;97;40m# until ! command -v pspman >/dev/null; \
+do pip uninstall -y pspman >/dev/null; done\033[0m
+
+        2) Remove pspman clone from its standard location: type without '# ':
+
+        \033[0;97;40m# rm -rf \"${HOME}/.pspman/src/pspman\"\033[0m
+
+        ... and initiate installation again:
+
+        I am aborting for now without making any changes.
+"
+        exit 1
+    fi
+
+    if [[ ! -f "./_install.py" ]]; then
+        echo "pspman/_install.py wasn't found. Downloading..."
+        wget "https://raw.githubusercontent.com/pradyparanjpe/\
+pspman/master/install_scripts/_install.py"
+    fi
+}
 
 
 function get_pip() {
@@ -37,12 +65,13 @@ function get_pip() {
 }
 
 function install() {
+    background_check $@
     if ! test "$(command -v python)"; then
         echo "Please install python3 first"
         exit 1
     fi
     get_pip
-    python3 ./install.py install
+    python3 ./_install.py doinstall
     echo "Updating Pspman"
     python3 -m pspman -s -i https://github.com/pradyparanjpe/pspman.git
     python3 -m pip install --prefix "${HOME}/.pspman" "${HOME}/.pspman/src/pspman"
@@ -52,25 +81,33 @@ function install() {
 function del_pspman() {
     oldpwd="${PWD}"
     cd "${HOME}" || exit
-    pip uninstall -y pspman
+    count=10
+    until ! pip uninstall -y pspman >>/dev/null; do
+        if [[ $count -lt 1 ]]; then
+            exit 1
+        fi
+        count=$(( count - 1 ))
+        echo "Tried uninstalling pspman, aborting..."
+    done
+    count=
     cd "$oldpwd"  || exit
 }
 
 function uninstall() {
-    python3 ./install.py uninstall
+    python3 ./_install.py douninstall
     del_pspman
 }
 
 case "$1" in
     install)
-        install
+        install $@
         ;;
     uninstall)
         uninstall
         ;;
     *)
         echo ""
-        echo "usage: bash ./install.sh install"
-        echo "       bash ./install.sh uninstall"
+        echo "usage: bash install.sh install"
+        echo "       bash install.sh uninstall"
         echo ""
 esac

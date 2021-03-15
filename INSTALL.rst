@@ -12,29 +12,24 @@ INSTALL
 
 Windows
 ~~~~~~~
-
 Sorry
 
 Apple
 ~~~~~
-
 This App might not work for you, since you didn’t have to pay for it.
 Also, it doesn't follow a `click-click-click done` approach. So, don't install it.
 
 Linux
 ~~~~~
-
 - REMEMBER, this is LGPLv3 (No warranty, your own risk, no guarantee of utility)
 
-using git
-^^^^^^^^^
-
--  copy installation scripts from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
+Using bash script
+^^^^^^^^^^^^^^^^^
+-  copy installation script from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
 
 .. code:: sh
 
-   wget https://github.com/pradyparanjpe/pspman/blob/master/install.sh
-   wget https://github.com/pradyparanjpe/pspman/blob/master/install.py
+   wget https://raw.githubusercontent.com/pradyparanjpe/pspman/master/install_scripts/install.sh
 
 -  Run Installation script
 
@@ -42,46 +37,62 @@ using git
 
    bash ./install.sh install
 
-using pip
-^^^^^^^^^
-
--  install using pip (Just because it is a python package)
+- Clean up: you may safely delete the installation script, and the aid script that it downloads
 
 .. code:: sh
 
-   pip install --user -U pspman
+   rm ./install.sh ./_install.py
+
+Using pip
+^^^^^^^^^
+- This option is described `just because` pspman is a python package.
 
 - Create directories: ``${HOME}/.pspman``
+
+.. code:: sh
+
+   mkdir -p "${HOME}/.pspman/src" "${HOME}/.pspman/bin" "${HOME}/.pspman/lib"
+
+-  install using pip
+
+.. code:: sh
+
+   pip install --prefix="${HOME}/.pspman" -U pspman
+
 - arrange to export PYTHONPATH and PATH, Ex. by adding to ``${HOME}/.bashrc``:
 
 .. code:: sh
 
-   export PYTHONPATH="${HOME}/.pspman/lib/``$python_version``/site-packages:${PYTHONPATH}"
-   export PATH="${HOME}/.pspman/bin:${PYTHONPATH}"
+   python_ver="$(python --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')"
+   export PYTHONPATH="${HOME}/.pspman/lib/${python_version}/site-packages:${PYTHONPATH}"
+   export PATH="${HOME}/.pspman/bin:${PATH}"
 
-- You will have to update the ``$python_version`` every time python is updated.
+- Understand that `installation scripts` do precisely *the above* for you, in an organized way.
+
 
 UNINSTALL
 ---------
-
-.. _pip-1:
 
 Linux
 ~~~~~
 
 .. _git-1:
 
-using git
-^^^^^^^^^
+
+Using bash script
+^^^^^^^^^^^^^^^^^
 
 -  Run (Un)Installation script
 
 .. code:: sh
 
-   cd ${HOME}/.pspman/src/pspman && bash uninstall.sh
+   cd "${HOME}/.pspman/src/pspman/install_scripts" && bash uninstall.sh
 
-using pip
+Using pip
 ^^^^^^^^^
+
+.. _pip-1:
+
 
 -  Remove using pip
 
@@ -89,7 +100,8 @@ using pip
 
    pip uninstall -y pspman
 
-- Remove corresponding configuration
+- Remove corresponding .bashrc configuration and ``${HOME}/.pspman`` folder
+
 
 UPDATE
 ------
@@ -97,8 +109,8 @@ UPDATE
 Linux
 ~~~~~
 
-using git
-^^^^^^^^^
+Using pspman
+^^^^^^^^^^^^
 
 (Use me to update myself): Run a regular update on the folder in which pspman is cloned
 
@@ -108,9 +120,9 @@ using git
 
 `That's all!`
 
-using pip
+Using pip
 ^^^^^^^^^
 
 .. code:: sh
 
-    pip install -U pspman
+    pip install --prefix="${HOME}/.pspman" -U pspman

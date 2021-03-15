@@ -78,10 +78,10 @@ def gen_mod_bash() -> str:
     '''
     rc_text = []
     rc_text.append('''
-python_dir=$(python --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')
+python_ver=$(python --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')
 ''')
     bin_path = '${HOME}/.pspman/bin'
-    py_path = '${HOME}/.pspman/lib/${python_dir}/site-packages'
+    py_path = '${HOME}/.pspman/lib/${python_ver}/site-packages'
     rc_text.append('''
 if [[ ! ${PATH} =~ %s ]]; then
     PATH="%s:$PATH"
@@ -153,22 +153,25 @@ def uninstall():
     Uninstallation
     '''
     restore_bash()
-    print('''
-    If you wish, erase standard .pspman folder:
+    home_dir = os.environ['HOME']
+    instructions = []
+    instructions.append('''
+    If you wish, erase standard .pspman folder: type without '# ':'''
+    )
 
-    # rm -rf ${HOME}/.pspman
+    instructions.append(f"\033[1;97;40m# rm -rf {home_dir}/.pspman\033[0m")
+    instructions.append("")
+    instructions.append(
+    '''... and similarly, any other C_DIR created by -c flag
 
-    ... and similarly, any other C_DIR created by -c flag
+    You may remove pspman configuration:'''
+    )
 
-    You may remove pspman configuration:
-
-    # if [[ -n "${XDG_CONFIG_HOME}" ]]; then \
-rm -rf "${XDG_CONFIG_HOME}/pspman"; \
-else \
-rm -rf "${HOME}/.config/pspman"; \
-fi
-
-    ''')
+    conf_dir = os.environ.get('XDG_CONFIG_HOME',
+                              os.environ['HOME'] + "/.config") + "/pspman"
+    instructions.append(f"\033[1;97;40mrm -rf {conf_dir}\033[0m")
+    instructions.append("")
+    print('\n    '.join(instructions))
 
 
 def main() -> None:
@@ -176,10 +179,13 @@ def main() -> None:
     Main subroutine
 
     '''
-    if sys.argv[-1] == 'install':
+    if sys.argv[-1] == 'doinstall':
         install()
-    elif sys.argv[-1] == 'uninstall':
+    elif sys.argv[-1] == 'douninstall':
         uninstall()
+    else:
+        print("Calling this script from the terminal is useless")
+        print("This script is used by `install.sh` script")
 
 if __name__ == "__main__":
     main()

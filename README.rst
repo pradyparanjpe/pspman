@@ -1,12 +1,5 @@
-PSPMAN
-------
 
 **PS**\ eudo **P**\ ackage **Man**\ ager (pspman) - a package manager aid
-
-DESCRIPTION
------------
-
-Manage git-cloned and installed packages.
 
 Documentation
 -------------
@@ -19,39 +12,50 @@ Source Code
 |source| `Repository <https://github.com/pradyparanjpe/pspman.git>`__
 
 
-Currently supports:
-~~~~~~~~~~~~~~~~~~~
+DESCRIPTION
+-----------
 
-* python (pip)
-* make (Makefile)
-* meson (ninja)
-* go
-* `pull-only` (don't install)
+Manage:
+    - automatically pull (update code)
+    - group (maintain isolated groups)
+    - attempt installation
 
-Information
-~~~~~~~~~~~
 
-This is still only an *aid*. A lot of work needs to be done manually.
+Packages from Git Repositories.
+
+
+Currently supports installation of:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - python (pip)
+    - make (Makefile)
+    - meson (ninja)
+    - go
+    - `pull-only` (don't install)
+
+Remember:
+~~~~~~~~~
+
+This is still only an *aid*. Some work
+    - rebase
+    - cherrypick
+    - ediff
+    - git headless state management
+    - `etc.`
+
+needs to be done manually.
 
 Order of Operation
 ~~~~~~~~~~~~~~~~~~
 
-* Delete projects
-* Pull installation urls
+* Delete projects (if requested)
+* Pull installation urls (default)
 * Update github projects
-
-ENVIRONMENT
------------
-
-${HOME}/.pspman
-~~~~~~~~~~~~~~~
-
-Used as default ``prefix`` and parent for default clone directory ``src``
 
 CAUTION
 -------
 
-This is a `personal, simple` package manager. Do NOT run it as ROOT.
+This is a `personal` package manager. Do NOT run it as ROOT.
+
 Never supply root password or sudo prefix unless you really know what you are doing.
 
 BUGS

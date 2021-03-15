@@ -79,7 +79,7 @@ def cli() -> argparse.ArgumentParser:
                         help='display list in verbose form')
     parser.add_argument('-s', '--stale', action='store_true',
                         help='skip updates, let the repository remain stale')
-    parser.add_argument('-O', '--only-pull', action='store_true',
+    parser.add_argument('-o', '--only-pull', action='store_true',
                         help='only pull, do not try to install',
                         dest='pull')
     parser.add_argument('-f', '--force-risk', action='store_true', dest='risk',
@@ -150,11 +150,13 @@ def perm_pass(env: InstallEnv, permdir: str) -> int:
             print(f'Checking permissions for the parent: {permdir}')
     user = os.environ['USER']
     stdout, stderr = subprocess.Popen(
-        ['stat', '-L', '-c', "%U %G %a", permdir], stdout=subprocess.PIPE,
+        ['stat', '-L', '-c', "%U %G %a", permdir],
+        stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True
     ).communicate()
     if stderr:
-        print('Error checking directory permissions, aborting...', mark=5)
+        print('Error checking directory permissions, aborting...',
+              mark=5)
         return 1
     owner, group, octperm = stdout.replace("\n", '').split(' ')
     if (octperm[-1] == '7') != 0:
@@ -168,7 +170,8 @@ def perm_pass(env: InstallEnv, permdir: str) -> int:
         ).communicate()
         if stderr:
             # error
-            print('Error checking group permissions, aborting...', mark=5)
+            print('Error checking group permissions, aborting...',
+                  mark=5)
             return 1
         user_groups = stdout.split(' ')
         for u_grp in user_groups:
@@ -199,7 +202,8 @@ def prepare_env(env: InstallEnv) -> int:
         if not env.risk:
             print('Bye', mark=0)
             return 2
-        print('I can only hope you know what you are doing...', mark=3)
+        print('I can only hope you know what you are doing...',
+              mark=3)
         print('Here is a chance to kill me in', mark=2)
         timeout(10)
         print('', mark=0)

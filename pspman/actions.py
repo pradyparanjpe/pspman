@@ -17,18 +17,18 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-parallel threading/multithreading operations
+parallel multiprocessed operations
 
 All `actions` accept same set of args and return same type of object
 
-args:
-    * env: action context
-    * project: project on which action is requested
+    Args:
+        * env: action context
+        * project: project on which action is requested
 
-Returns:
-    * project.name for indexing
-    * project.tag feedback to update parent
-    * success of action to inform parent
+    Returns:
+        * project.name for indexing
+        * project.tag feedback to update parent
+        * success of action to inform parent
 
 '''
 

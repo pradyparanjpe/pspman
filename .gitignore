@@ -146,3 +146,5 @@ cython_debug/
 # pypi pushed
 pypi.sh
 
+# feature plans
+docs/_plan/

@@ -47,6 +47,10 @@ def call() -> int:
     '''
     env = ENV.update(cli_opts())
 
+    if env.call_function == 'version':
+        print(__version__, mark='info', pref='VERSION')
+        return 0
+
     if env.call_function == 'unlock':
         lock(env=env, unlock=True)
         return 0
@@ -57,11 +61,6 @@ def call() -> int:
     env_err = prepare_env(env)
     if env_err != 0:
         return env_err
-
-    if env.call_function == 'version':
-        print(__version__, mark='info')
-        lock(env=env, unlock=True)
-        return 0
 
     if env.verbose:
         print(env, mark='bug')
