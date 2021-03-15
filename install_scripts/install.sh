@@ -21,8 +21,12 @@
 # install pspman
 
 
-function background_check() {
-    if test "command -v pspman >> /dev/null"; then
+pspbase="${HOME}/.pspman"
+inst_temp_dir="${pspbase}/pspman_install_temp"
+
+
+function already_installed() {
+    if ! test "command -v pspman >> /dev/null"; then
         echo -e "
         \033[0;91mPSPMAN is already installed:\033[0m
         $( pspman version ) .
@@ -37,7 +41,7 @@ do pip uninstall -y pspman >/dev/null; done\033[0m
 
         2) Remove pspman clone from its standard location: type without '# ':
 
-        \033[0;97;40m# rm -rf \"${HOME}/.pspman/src/pspman\"\033[0m
+        \033[0;97;40m# rm -rf \"${pspbase}/src/pspman\"\033[0m
 
         ... and initiate installation again:
 
@@ -45,37 +49,134 @@ do pip uninstall -y pspman >/dev/null; done\033[0m
 "
         exit 1
     fi
+}
 
-    if [[ ! -f "./_install.py" ]]; then
-        echo "pspman/_install.py wasn't found. Downloading..."
-        wget "https://raw.githubusercontent.com/pradyparanjpe/\
-pspman/master/install_scripts/_install.py"
-    fi
+
+function create_temp_install() {
+    mkdir -p "${inst_temp_dir}"
+    cd "${inst_temp_dir}"
+}
+
+
+function inst_fail() {
+    echo "Failed installing $1"
+    echo "aborting..."
+    exit 1
+}
+
+
+function get_tar() {
+    echo "TAR archive not found"
+    echo "Install all dependencies and then run this script"
+    exit 1
+}
+
+
+function get_make() {
+    make_ver="4.3"
+    make_url="ftp://ftp.gnu.org/gnu/make/\
+make-${make_ver}.tar.gz"
+    tar -xzf "make-${make_ver}.tar.gz"
+    cd "make-${make_ver}"
+    ./configure --prefix="${pspbase}"
+    ./install.sh
+}
+
+
+function get_python() {
+    python_ver="3.9.2"
+    python_url="https://www.python.org/ftp/python/3.9.2/\
+Python-${python_ver}.tgz"
+    tar -xzf "Python-${python_ver}.tgz"
+    cd "Python-${python_ver}"
+    ./configure --prefix="${pspbase}"
+    make
+    make install
 }
 
 
 function get_pip() {
-    if ! test "$(command -v pip)"; then
-        wget "https://bootstrap.pypa.io/get-pip.py"
-        python3 "get-pip.py" --user
-        rm get-pip.py
-    fi
-    echo "Updating pip"
+    wget "https://bootstrap.pypa.io/get-pip.py"
+    python3 "get-pip.py" --prefix="${pspbase}"
     python3 -m "pip" install --user -U pip setuptools wheel
 }
 
-function install() {
-    background_check $@
-    if ! test "$(command -v python)"; then
-        echo "Please install python3 first"
-        exit 1
+
+function get_git() {
+    git_ver="2.30.2"
+    git_url="https://mirrors.edge.kernel.org/pub/software/scm/git/\
+git-${git_ver}.tar.gz"
+    tar -xzf "git-${git_ver}.tar.gz"
+    cd "git-${git_ver}"
+    ./configure --prefix="${pspbase}"
+    make
+    make install
+}
+
+
+function get_go() {
+    go_ver="1.16.2"
+    go_url="https://golang.org/dl/\
+go${go_ver}.linux-amd64.tar.gz"
+    tar -xzf "go${go_ver}.linux-amd64.tar.gz"
+    cp ./go/bin/* -t ${pspbase}/bin/.
+}
+
+
+function get_meson() {
+    pip install --prefix="${pspbase}" -U meson
+}
+
+
+function check_dep() {
+    dep="$1"
+    if ! test "$(command -v $dep)"; then
+        echo "${dep} is not installed"
+        echo "1. (Recommended) install ${dep} and run this script"
+        echo "2. (Discouraged) try installing ${dep} locally"
+        echo "[1/2]:\t"
+        read choice
+        if [[ "${choice}" != "2" ]]; then
+            echo "GOOD! Aborting installation."
+            exit 0
+        fi
+        echo "Trying a local install of ${dep} this is not a good idea!"
+        get_${dep}
     fi
-    get_pip
+}
+
+function install() {
+    already_installed $@
+
+    oldpwd="${PWD}"
+
+    create_temp_install
+
+    export PATH="${pspbase}/bin:${PATH}"
+
+    for dep in "tar" "make" "python" "pip" "git" "go" "meson"; do
+        check_dep "${dep}"
+    done
+
+    wget "https://raw.githubusercontent.com/pradyparanjpe/\
+pspman/master/install_scripts/_install.py"
+
+
     python3 ./_install.py doinstall
-    echo "Updating Pspman"
+
+    python3 -m pip install --prefix="${pspbase}" -U pspman  # Temporary
+
     python3 -m pspman -s -i https://github.com/pradyparanjpe/pspman.git
-    python3 -m pip install --prefix "${HOME}/.pspman" "${HOME}/.pspman/src/pspman"
-    source ~/.bashrc
+
+    python3 -m pip install --prefix "${pspbase}" -U "${pspbase}/src/pspman"
+
+    pspman version || inst_fail "pspman"
+
+    cd "${oldpwd}"
+
+    echo -e "Installation over"
+    echo -e "Start a new shell (terminal) or run without '# ':"
+    echo -e "\033[1;97;40msource ${HOME}/bashrc\033[0m"
 }
 
 function del_pspman() {
@@ -87,7 +188,7 @@ function del_pspman() {
             exit 1
         fi
         count=$(( count - 1 ))
-        echo "Tried uninstalling pspman, aborting..."
+        echo "Tried uninstalling pspman, failed ${count} times"
     done
     count=
     cd "$oldpwd"  || exit

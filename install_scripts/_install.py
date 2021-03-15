@@ -128,24 +128,12 @@ def chg_bashrc() -> None:
         bashrc_h.write(MOD_BASH)
 
 
-def get_pspman():
-    '''
-    Install pspman
-
-    '''
-    print("installing pspman")
-    subprocess.Popen([
-        'python3', '-m', 'pip', 'install', '--prefix',
-        os.path.join(os.environ['HOME'], '.pspman'), '-U', 'pspman'
-    ])
-
 
 def install():
     '''
     Installation
     '''
     chg_bashrc()
-    get_pspman()
 
 
 def uninstall():
