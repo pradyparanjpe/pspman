@@ -78,7 +78,7 @@ def gen_mod_bash() -> str:
     '''
     rc_text = []
     rc_text.append('''
-python_ver=$(python --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')
+python_ver=$(python3 --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')
 ''')
     bin_path = '${HOME}/.pspman/bin'
     py_path = '${HOME}/.pspman/lib/${python_ver}/site-packages'

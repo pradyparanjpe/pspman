@@ -148,7 +148,7 @@ def perm_pass(env: InstallEnv, permdir: str) -> int:
         permdir = os.path.split(os.path.realpath(permdir))[0]
         if env.verbose:
             print(f'Checking permissions for the parent: {permdir}')
-    user = os.environ['USER']
+    user = os.environ.get('USER', 'root')
     stdout, stderr = subprocess.Popen(
         ['stat', '-L', '-c', "%U %G %a", permdir],
         stdout=subprocess.PIPE,
@@ -197,7 +197,7 @@ def prepare_env(env: InstallEnv) -> int:
         Error code
     '''
     # Am I root?
-    if os.environ['USER'].lower() == 'root':
+    if os.environ.get('USER', 'root').lower() == 'root':
         print('I hate dictators', mark=3)
         if not env.risk:
             print('Bye', mark=0)
