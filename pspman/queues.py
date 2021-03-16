@@ -30,13 +30,12 @@ import multiprocessing
 import time
 import string
 import socket
-import threading
 import random
 import tempfile
 import json
 import yaml
 from . import print
-from .classes import InstallEnv, GitProject, GitProjectListEncoder
+from .classes import InstallEnv, GitProject, GitProjEncoder
 from .actions import delete, clone, update, install, success, failure
 from .errors import ClosedQueueError
 from .tag import TAG_ACTION
@@ -69,8 +68,7 @@ class PSPQueue:
             * q_type: type of queue
 
     '''
-    def __init__(self, env: InstallEnv,
-                 action: typing.Callable,
+    def __init__(self, env: InstallEnv, action: typing.Callable,
                  fail_q: 'PSPQueue' = None,  # type: ignore
                  **kwargs):
         self.env = env
@@ -146,11 +144,9 @@ class PSPQueue:
         while len(self.queue):
             with multiprocessing.Pool(self._parallel) as pool:
                 results: typing.List[typing.Tuple[str, int, bool]] = list(
-                    pool.map_async(
-                        self.action,
-                        ((self.env, project) for project in
-                         self.queue.values())).get()
-                )
+                    pool.map_async(self.action,
+                                   ((self.env, project) for
+                                    project in self.queue.values())).get())
             for res in results:
                 project = self.queue[res[0]]
                 del self.queue[res[0]]
@@ -217,9 +213,9 @@ class PSPQueue:
                 # final pass
                 self.run_batch()
                 if self.downstream_qs['success'] is not None:
-                        self.downstream_qs['success'].done(self)
+                    self.downstream_qs['success'].done(self)
                 if self.downstream_qs['fail'] is not None:
-                        self.downstream_qs['fail'].done(self)
+                    self.downstream_qs['fail'].done(self)
             sys.exit(0)
         else:
             # parent client
@@ -262,17 +258,13 @@ class PSPQueue:
         Parent: copy to child's queue
 
         '''
-        # FAIL: All getting pushed, and only first is received
-        if project:
-            self.queue[project.name] = project
+        if project is None:
+            return
+        self.queue[project.name] = project
         try:
-            to_json = json.dumps(
-                self.queue,
-                cls=GitProjectListEncoder
-            ).encode('utf-8')
-            self._client.send(len(to_json).to_bytes(length=64,
-                                                    byteorder='big'))
-            self._client.send(to_json)
+            json_t = json.dumps(self.queue, cls=GitProjEncoder).encode('utf-8')
+            self._client.send(len(json_t).to_bytes(length=64, byteorder='big'))
+            self._client.send(json_t)
             self.queue = {}
         except socket.timeout:
             print('Server child did\'t respond...', mark='info')
@@ -283,17 +275,15 @@ class PSPQueue:
 
         '''
         represent: typing.List[str] = [f'Queue: {self.q_type}']
-        represent.append(
-            f"Queue-success: {self.downstream_qs['success'].q_type}"
-            if self.downstream_qs['success'] is not None
-            else 'Queue-success: ``None``'
-        )
-        represent.append(f"Queue-fail: {self.downstream_qs['fail'].q_type}"
+        represent.append(f"On Success: {self.downstream_qs['success'].q_type}"
+                         if self.downstream_qs['success'] is not None
+                         else 'On Success: ``None``')
+        represent.append(f"On fail: {self.downstream_qs['fail'].q_type}"
                          if self.downstream_qs['fail'] is not None
-                         else 'Queue-fail: ``None``')
+                         else 'On fail: ``None``')
         represent.append("Upstream feeds:")
         for up_q in self.upstream_qs:
-            represent.append(f"\t{up_q.q_type}")
+            represent.append("\t" + f"{up_q.q_type}")
         represent.append(f'contents: {len(self)} items')
         return '\n'.join(represent)
 
@@ -310,15 +300,10 @@ class FailQueue(PSPQueue):
 class TermQueue(PSPQueue):
     '''
     Terminal queues that do not have a downstream action queue
-
-    Attributes:
-        registry: Log held by child process about action success/failure
-
     '''
     def __init__(self, env: InstallEnv, action: typing.Callable,
                  q_type: str = 'terminal', **kwargs):
         super().__init__(env=env, action=action, q_type=q_type, **kwargs)
-        self.registry: typing.List[GitProject] = []
 
     def on_success(self, project: GitProject):
         '''
@@ -341,7 +326,6 @@ class SuccessQueue(TermQueue):
 
     '''
     Queue to reguster Successful objects
-
     '''
     def __init__(self, env: InstallEnv, **kwargs):
         super().__init__(env=env, action=success, q_type='success', **kwargs)

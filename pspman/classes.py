@@ -41,7 +41,7 @@ class InstallEnv():
     Attributes:
         call_function: sub-function called {version,info,unlock}
         clone_dir: base directory to clone src
-        prefix: [=``clone_dir``] `prefix` for installation
+        prefix: `prefix` for installation
         risk: risk root
         pull: only pull, don't try to install
         stale: do not update, only delete/install new
@@ -175,9 +175,8 @@ class GitProject():
             return self.name
         if self.url is None:
             raise GitURLError
-        self.name = os.path.splitext(
-            self.url.replace(':', '/').split('/')[-1]
-        )[0]
+        self.name = os.path.splitext(self.url.replace(':', '/')
+                                     .split('/')[-1])[0]
         return self.name
 
     def merge(self, data: typing.Dict[str, object]) -> None:
@@ -195,10 +194,10 @@ class GitProject():
     def type_install(self, env: InstallEnv) -> None:
         '''
         Determine guess the installation type based on files present
-        in the cloned directory
+        in the cloned directory.
 
         Args:
-            env: context in which, type of installation is called
+            env: context in which, type_install is called.
         '''
         if env.pull or self.pull:
             self.tag &= 0x0F
@@ -235,13 +234,13 @@ class GitProject():
             if self.last_updated else None
         return f'''
         *** {self.name} ***
-        Last Updated: {updated}
         Source: {self.url}
         Branch: {self.branch}
+        Last Updated: {updated}
+        Only Pull?: {self.pull}
+        Base tag: {hex(self.tag)}
         Installation arguments: {self.inst_argv}
         Altered shell environment variables: {self.sh_env}
-        Base tag: {hex(self.tag)}
-        Pull: {self.pull}
         '''
 
     def __str__(self) -> str:
@@ -252,13 +251,10 @@ class GitProject():
         return str(self.name)
 
 
-class GitProjectListEncoder(json.JSONEncoder):
+class GitProjEncoder(json.JSONEncoder):
     '''
     Encode Class object's __dict__
 
     '''
     def default(self, o: GitProject) -> dict:
         return o.__dict__
-
-
-

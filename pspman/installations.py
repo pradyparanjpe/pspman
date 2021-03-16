@@ -52,19 +52,16 @@ def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
     makefile = os.path.join(code_path, 'Makefile')
     if os.path.exists(configure):
         conf_out = process_comm(configure, '--prefix', prefix, *argv,
-                                env=mod_env,
-                                fail_handle='report')
+                                env=mod_env, fail_handle='report')
         if conf_out is None:
             return False
     if os.path.exists('./Makefile'):
-        make_out = process_comm('make', incl, libs,
-                                '-C', makefile, env=mod_env,
-                                fail_handle='report')
+        make_out = process_comm('make', incl, libs, '-C', makefile,
+                                env=mod_env, fail_handle='report')
         if make_out is None:
             return False
-        return bool(process_comm('make', incl, libs,
-                                '-C', makefile, 'install',
-                                env=mod_env, fail_handle='report'))
+        return bool(process_comm('make', incl, libs, '-C', makefile, 'install',
+                                 env=mod_env, fail_handle='report'))
     return False
 
 
@@ -88,15 +85,14 @@ def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
         mod_env[var] = val
     requirements_file_path = os.path.join(code_path, 'requirements.txt')
     if os.path.exists(requirements_file_path):
-        pip_req = process_comm(
-            'python3', '-m', 'pip', 'install', '--prefix', prefix, '-U', '-r',
-            requirements_file_path, env=mod_env, fail_handle='report')
+        pip_req = process_comm('python3', '-m', 'pip', 'install', '--prefix',
+                               prefix, '-U', '-r', requirements_file_path,
+                               env=mod_env, fail_handle='report')
         if pip_req is None:
             return False
-    return bool(process_comm(
-        'python3', '-m', 'pip', 'install', '--prefix', prefix, '-U', *argv,
-        code_path, env=mod_env, fail_handle='report'
-    ))
+    return bool(process_comm('python3', '-m', 'pip', 'install', '--prefix',
+                             prefix, '-U', *argv, code_path, env=mod_env,
+                             fail_handle='report'))
 
 
 def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
@@ -134,9 +130,8 @@ def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
 
     if build is None:
         return False
-    return bool(process_comm(
-        'meson', 'install', '-C', update_dir, env=mod_env, fail_handle='report'
-    ))
+    return bool(process_comm('meson', 'install', '-C', update_dir, env=mod_env,
+                             fail_handle='report'))
 
 
 def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
@@ -155,8 +150,9 @@ def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
     argv = argv or []
     env = env or {}
     mod_env = os.environ.copy()
+    mod_env['GOROOT'] = prefix
+    mod_env['GOPATH'] = prefix
     for var, val in env.items():
         mod_env[var] = val
-    mod_env['GOBIN'] = os.path.realpath(os.path.join(prefix, 'bin'))
-    return bool(process_comm('go', 'install', '-i', '-pkgdir', *argv,
-                            code_path, env=mod_env, fail_handle='report'))
+    return bool(process_comm('go', 'install', '-i', *argv, '-pkgdir',
+                             code_path, env=mod_env, fail_handle='report'))

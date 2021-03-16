@@ -37,12 +37,12 @@ def call() -> int:
     Parse command line arguments to
 
         * list cloned git repositories,
-        * add / remove git repositories and corresponding installations
+        * add / remove git repositories
         * pull git repositories,
         * update (default),
 
     Returns:
-        error code
+        Error code to system
 
     '''
     env = ENV.update(cli_opts())
@@ -51,22 +51,20 @@ def call() -> int:
         print(__version__, mark='info', pref='VERSION')
         return 0
 
-    if env.call_function == 'unlock':
-        lock(env=env, unlock=True)
-        return 0
-
     env_err = prepare_env(env)
     if env_err != 0:
         return env_err
 
-    if lock(env):
-        return 1
+    lock_state = lock(env=env, unlock=(env.call_function == 'unlock'))
+    if lock_state != 0:
+        return lock_state - 1
 
     if env.verbose:
         print(env, mark='bug')
+
     git_projects = find_gits(env=env)
     if env.call_function == 'info':
-        lock(env, unlock=True)
+        lock(env=env, unlock=True)
         return print_projects(env=env, git_projects=git_projects)
 
     queues = init_queues(env=env)
@@ -82,11 +80,10 @@ def call() -> int:
         else:
             for project in git_projects.values():
                 queues['success'].add(project)
-        for q_name in ('pull', 'clone'):
+        for q_name in 'pull', 'clone':
             if q_name in queues:
                 if env.verbose:
-                    print(f'Waiting for {queues[q_name].q_type} queue',
-                          mark='bug')
+                    print(f'Wait: {queues[q_name].q_type} queue', mark='bug')
                 os.waitpid(queues[q_name].pid, 0)
         for q_name in 'delete', 'install':
             if q_name in queues:

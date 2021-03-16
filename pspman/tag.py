@@ -70,7 +70,7 @@ FAIL_TAG: typing.Dict[int, str] = {
     0x02: 'Code-update failed',
     0x04: 'Installation failed',
 
-    0x00: 'failed at everything',
+    0x00: 'Processed everything',
 }
 '''
 tag(ing): Action-failure codes

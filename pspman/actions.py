@@ -17,7 +17,7 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-parallel multiprocessed operations
+Parallel multiprocessed operations
 
 All `actions` accept same set of args and return same type of object
 
@@ -48,6 +48,8 @@ def delete(
 ) -> typing.Tuple[str, int, bool]:
     '''
     Delete this project
+
+    TODO: Attempt make uninstall, pip uninstall, meson uninstall, etc...
 
     Args:
         args:
@@ -84,10 +86,10 @@ def clone(
     '''
     Get (clone) the remote project.url
 
-        Args:
-            args:
-                * env: installation context
-                * project: project to delete
+    Args:
+        args:
+            * env: installation context
+            * project: project to delete
 
     Returns:
         project.name, project.tag, success of action
@@ -171,10 +173,9 @@ def install(
     install_call: typing.Callable = {
         1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
     }.get(int(project.tag//0x10), lambda **_: True)
-    success = install_call(
-        code_path=os.path.join(env.clone_dir, project.name),
-        prefix=env.prefix, argv=project.inst_argv, env=project.sh_env
-    )
+    success = install_call(code_path=os.path.join(env.clone_dir, project.name),
+                           prefix=env.prefix, argv=project.inst_argv,
+                           env=project.sh_env)
     if success:
         if env.verbose:
             print(f'Installed (update for) project {project.name}.',
