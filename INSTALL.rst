@@ -4,8 +4,11 @@ PREREQUISITES
 - `git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`__
 - `python3 <https://www.python.org/downloads/>`__
 - `make <http://ftpmirror.gnu.org/make/>`__ (for ``make install``)
+- `cmake <https://cmake.org/install/>`__ (for ``cmake build``)
 - `go <https://golang.org/doc/install>`__ (for ``go install``)
 - `meson/ninja <https://mesonbuild.com/Getting-meson.html>`__ (for meson build, ninja install)
+- `bash <https://www.gnu.org/software/bash/>`__
+    - Although ``pspman`` itself does not require `bash`, the installation script is written in `bash`. You may translate it to a shell of your choice if you wish. Also, all exports (PATH, PYTHONPATH) are made for `bash`. If you use any other shell, you need to export PATH and PYTHONPATH as described in section :ref:`export_1`
 
 INSTALL
 -------
@@ -42,6 +45,8 @@ Using bash script
 .. code:: sh
 
    rm ./install.sh ./_install.py
+
+.. _export_1:
 
 Using pip
 ^^^^^^^^^

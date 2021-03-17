@@ -79,37 +79,59 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
     return stdout
 
 
-def git_comm(clone_dir: str, action: str = None, url: str = None,
-             name: str = None, **kwargs) -> typing.Optional[str]:
+def git_comm(
+        clone_dir: str,
+        motive: typing.Union[str, typing.Tuple[str, str]] = None,
+        gitkwargs: typing.Dict[str, typing.Optional[str]] = None,
+        prockwargs: typing.Dict[str, str] = None) -> typing.Optional[str]:
     '''
     Perform a git action
 
     Args:
         clone_dir: directory in which, project is (to be) cloned
-        action: git action to perform
+        motive: git action to perform
             * list: list git projects (default)
             * pull: pull and update
-            * clone: clone a new project (requires ``name``, ``url``)
+            * (url, name): clone a new project identified by (url, name)
+                * url: remote url to clone
+                * name: name (path) of project
 
-        url: remote url to clone (required for ``action`` == 'clone')
-        name: name (path) of project (required for ``action`` == 'clone')
-        **kwargs:
-            * passed to ``process_comm``
+        gitkwargs: parsed from to --key[=val] and passed to git command
+        prockwargs: passed to ``process_comm``
 
     Returns:
         Output from process_comm
 
     '''
-    if action == 'clone' and any(req is None for req in (url, name)):
-        # required with action == 'clone'
-        return None
-    cmd: typing.List[str] = ['git', '-C']
-    git_args: typing.Dict[str, typing.Tuple[str, ...]] = {
-        'clone': (os.path.split(clone_dir)[0],  # type: ignore
-                  'clone', url, name),
-        'list': (clone_dir, 'remote', '-v'),
-        'pull': (clone_dir, 'pull', '--recurse-submodules'),
-    }
-    cmd.extend(git_args[action or 'list'])
-    return process_comm(*cmd, p_name=f'git {action}',
-                        fail_handle='report', **kwargs)
+    # Default $0 command
+    cmd: typing.List[str] = ['git']
+
+    # process kwargs
+    if prockwargs is None:
+        prockwargs: typing.Dict[str, str] = {}
+
+    if gitkwargs is None:
+        gitkwargs: typing.Dict[str, typing.Optional[str]] = {}
+
+    if isinstance(motive, str):
+        if motive == 'pull':
+            cmd.extend(('-C', clone_dir, 'pull', '--recurse-submodules'))
+        else:
+            cmd.extend(("-C", clone_dir, 'remote', "-v"))
+    else:
+        if not isinstance(motive, (tuple, list)) or len(motive) != 2:
+            return False
+        url, name = motive
+        if not(isinstance(url, str) and isinstance(name, str)):
+            return False
+        cmd.extend(('-C', os.path.split(clone_dir)[0], 'clone', url, name))
+
+    # Parse gitkwargs into arguments
+    for key, val in gitkwargs.items():
+        key_flag = "-" + str(key) if len(str(key)) < 2 else "--" + str(key)
+        cmd.append(key_flag)
+        if val is not None:
+            cmd.append(str(val))
+
+    return process_comm(*cmd, p_name=f'git {motive}',
+                        fail_handle='report', **prockwargs)

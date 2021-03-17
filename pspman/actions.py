@@ -100,8 +100,8 @@ def clone(
         print(f'URL for {project.name} was not supplied', mark='err')
         return project.name, project.tag, False
     success = git_comm(clone_dir=os.path.join(env.clone_dir, project.name),
-                       action='clone',
-                       url=project.url, name=project.name)
+                       motive=(project.url, project.name),
+                       gitkwargs={'branch': project.branch})
     if success is None:
         # STDERR thrown
         print(f'Failed to clone source of {project.name}', mark='fclone')
@@ -131,7 +131,7 @@ def update(
     '''
     env, project = args
     g_pull = git_comm(clone_dir=os.path.join(env.clone_dir, project.name),
-                      action='pull')
+                      motive='pull')
     if g_pull is not None:
         # STDERR from pull was blank
         tag = project.tag & (0xff - ACTION_TAG['pull'])

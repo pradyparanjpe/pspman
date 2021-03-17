@@ -97,7 +97,7 @@ def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
         if leaf in git_projects:
             continue
         pkg_path = os.path.join(env.clone_dir, leaf)
-        g_url = git_comm(clone_dir=pkg_path, action='list')
+        g_url = git_comm(clone_dir=pkg_path, motive='list')
         if g_url is None:
             # failed
             continue

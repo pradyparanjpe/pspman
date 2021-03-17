@@ -115,7 +115,9 @@ def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
     update_dir = os.path.join(code_path, 'build', 'update')
     subproject_dir = os.path.join(code_path, 'subprojects')
     os.makedirs(subproject_dir, exist_ok=True)
-    _ = process_comm('pspman', '-c', subproject_dir, '-p', prefix,
+
+    # if execution could reach here, -f is assumed for subprocess
+    _ = process_comm('pspman', '-f', '-c', subproject_dir, '-p', prefix,
                      env=mod_env, fail_handle='report')
     os.makedirs(update_dir, exist_ok=True)
     build = process_comm('meson', '--wipe', '--buildtype=release',
