@@ -28,6 +28,7 @@ Currently supports installation of:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     - python (pip)
     - make (Makefile)
+    - cmake
     - meson (ninja)
     - go
     - `pull-only` (don't install)

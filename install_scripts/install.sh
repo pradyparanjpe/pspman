@@ -21,6 +21,7 @@
 # install pspman
 
 
+workpwd="${PWD}"
 pspbase="${HOME}/.pspman"
 inst_temp_dir="${pspbase}/pspman_install_temp"
 
@@ -61,7 +62,7 @@ function create_temp_install() {
 function inst_fail() {
     echo "Failed installing $1"
     echo "aborting..."
-    cd "{$oldpwd}"
+    cd "{$workpwd}"
     exit 1
 }
 
@@ -95,6 +96,20 @@ make-${make_ver}.tar.gz"
     cd "make-${make_ver}"
     ./configure --prefix="${pspbase}"
     ./install.sh
+    cd "${inst_temp_dir}"
+}
+
+
+function get_cmake() {
+    cmake_ver="3.19.7"
+    cmake_url="https://github.com/Kitware/CMake/releases/download/\
+v${cmake_ver}/cmake-${cmake_ver}.tar.gz"
+    wget "${cmake_url}"
+    tar -xzf "cmake-${cmake_ver}.tar.gz"
+    cd "cmake-${cmake_ver}"
+    ./configure --prefix="${pspbase}"
+    make
+    make install
     cd "${inst_temp_dir}"
 }
 
@@ -171,19 +186,18 @@ function check_dep() {
 function install() {
     already_installed $@
 
-    oldpwd="${PWD}"
-
     create_temp_install
 
     export PATH="${pspbase}/bin:${PATH}"
-    python_ver="$(python3 --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')"
+    python_ver="$(python3 --version |cut -d "." -f1,2 |sed 's/ //' |\
+sed 's/P/p/')"
     export PYTHONPATH="${pspbase}/lib/{}/site-packages:${PYTHONPATH}"
 
-    for dep in "tar" "make" "python3" "pip" "git" "go" "meson"; do
+    for dep in "tar" "make" "python3" "pip" "git" "cmake" "go" "meson"; do
         check_dep "${dep}"
     done
 
-    if [[ ! -f "_install.py" ]]; then
+    if [[ ! -f "${inst_temp_dir}/_install.py" ]]; then
         wget "https://raw.githubusercontent.com/pradyparanjpe/\
 pspman/master/install_scripts/_install.py" || inst_fail "pspman (download)"
     fi
@@ -202,15 +216,14 @@ pspman/master/install_scripts/_install.py" || inst_fail "pspman (download)"
 
     pspman version || inst_fail "pspman"
 
-    cd "${oldpwd}"
+    cd "${workpwd}"
 
     echo -e "Installation over"
     echo -e "Start a new shell (terminal) or run without '# ':"
-    echo -e "\033[1;97;40msource ${HOME}/bashrc\033[0m"
+    echo -e "\033[1;97;40msource ${HOME}/.bashrc\033[0m"
 }
 
 function del_pspman() {
-    oldpwd="${PWD}"
     cd "${HOME}" || exit
     count=10
     until command -v pspman >/dev/null; do
@@ -222,7 +235,8 @@ function del_pspman() {
         echo "Tried uninstalling pspman, failed ${count} times"
     done
     count=
-    cd "$oldpwd"  || exit
+    rm -rf "${inst_temp_dir}"
+    cd "$workpwd" || exit
 }
 
 function uninstall() {

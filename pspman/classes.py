@@ -216,6 +216,8 @@ class GitProject():
             self.tag |= ACTION_TAG['meson']
         elif os.path.exists(os.path.join(path, 'main.go')):
             self.tag |= ACTION_TAG['go']
+        elif os.path.exists(os.path.join(path, 'CMakeLists.txt')):
+            self.tag |= ACTION_TAG['cmake']
         else:
             self.tag &= 0x0F
 
