@@ -33,6 +33,7 @@ ACTION_TAG: typing.Dict[str, int] = {
     'pip': 0x20,
     'meson': 0x30,
     'go': 0x40,
+    'cmake': 0x80,
 
     'delete': 0x01,
     'pull': 0x02,
@@ -50,6 +51,7 @@ TAG_ACTION: typing.Dict[int, str] = {
     0x20: 'pip',
     0x30: 'meson',
     0x40: 'go',
+    0x80: 'cmake',
 
     0x01: 'delete',
     0x02: 'pull',
@@ -65,6 +67,7 @@ FAIL_TAG: typing.Dict[int, str] = {
     0x20: 'Pip installation failed',
     0x30: 'Meson installation failed',
     0x40: 'Go installation failed',
+    0x80: 'CMake installation failed',
 
     0x01: 'Code-delete failed',
     0x02: 'Code-update failed',

@@ -28,6 +28,7 @@ import sys
 import typing
 import subprocess
 import argparse
+import shutil
 import argcomplete
 from psprint import print
 from .classes import InstallEnv
@@ -239,6 +240,9 @@ def lock(env: InstallEnv, unlock: bool = False):
                                            f".pspman.{filetype}.yml")
                 if os.path.isfile(backup_file + ".bak"):
                     os.rename(backup_file + ".bak", backup_file)
+            temp_build = os.path.join(env.prefix, 'temp_build')
+            if os.path.isdir(temp_build):
+                shutil.rmtree(temp_build)
             os.remove(lockfile)
             return 1
         with open(lockfile, 'r') as lock_fh:

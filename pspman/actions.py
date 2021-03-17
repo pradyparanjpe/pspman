@@ -40,7 +40,8 @@ from . import print
 from .shell import git_comm
 from .classes import InstallEnv, GitProject
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION
-from .installations import install_make, install_pip, install_meson, install_go
+from .installations import (install_make, install_pip,
+                            install_meson, install_go, install_cmake)
 
 
 def delete(
@@ -172,7 +173,7 @@ def install(
         return project.name, tag, True
     install_call: typing.Callable = {
         1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
-    }.get(int(project.tag//0x10), lambda **_: True)
+        8: install_cmake}.get(int(project.tag//0x10), lambda **_: True)
     success = install_call(code_path=os.path.join(env.clone_dir, project.name),
                            prefix=env.prefix, argv=project.inst_argv,
                            env=project.sh_env)
