@@ -64,11 +64,12 @@ def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
     '''
     incl = os.path.join(prefix, 'include')
     libs = os.path.join(prefix, 'lib')
-    include, library = (), ()
+    include: typing.Union[typing.Tuple[str, str], typing.Tuple] = ()
+    library: typing.Union[typing.Tuple[str, str], typing.Tuple] = ()
     if os.path.isdir(incl):
-        include: typing.Tuple[str, str] = "-I", incl
+        include = "-I", incl
     if os.path.isdir(libs):
-        library: typing.Tuple[str, str] = "-I", libs
+        library = "-I", libs
     configure = os.path.join(code_path, 'configure')
     argv, mod_env = prep_arg_env(argv, env)
     if os.path.exists(configure):
@@ -105,11 +106,12 @@ def install_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
     build_dir = os.path.join(prefix, 'temp_build', 'cmake')
     incl = os.path.join(prefix, 'include')
     libs = os.path.join(prefix, 'lib')
-    include, library = (), ()
+    include: typing.Union[typing.Tuple[str, str], typing.Tuple] = ()
+    library: typing.Union[typing.Tuple[str, str], typing.Tuple] = ()
     if os.path.isdir(incl):
-        include: typing.Tuple[str, str] = "-I", incl
+        include = "-I", incl
     if os.path.isdir(libs):
-        library: typing.Tuple[str, str] = "-I", libs
+        library = "-I", libs
     os.makedirs(build_dir, exist_ok=True)
 
     # cmake build

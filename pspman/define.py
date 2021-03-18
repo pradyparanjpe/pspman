@@ -238,7 +238,8 @@ def lock(env: InstallEnv, unlock: bool = False):
             for filetype in "healthy", "fail":
                 backup_file = os.path.join(env.clone_dir,
                                            f".pspman.{filetype}.yml")
-                if os.path.isfile(backup_file + ".bak"):
+                if os.path.isfile(backup_file + ".bak") and \
+                   not os.path.isfile(backup_file):
                     os.rename(backup_file + ".bak", backup_file)
             temp_build = os.path.join(env.prefix, 'temp_build')
             if os.path.isdir(temp_build):

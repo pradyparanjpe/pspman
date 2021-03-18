@@ -27,24 +27,30 @@ inst_temp_dir="${pspbase}/pspman_install_temp"
 
 
 function already_installed() {
-    if test "command -v pspman >> /dev/null"; then
+    if command -v pspman &> /dev/null; then
         echo -e "
         \033[0;91mPSPMAN is already installed:\033[0m
-        $( pspman version ) .
+        \033[0;32m$( pspman version ) .\033[0m
 
+        \033[0;92mIf you wish to update pspman...\033[0m
 
-        \033[0;94mIf you wish to install afresh...\033[0m
+        run without '# ':
 
-        1) Uninstall pspman using \033[1;97;40mpip\033[0m: type without '# ':
+        \033[0;97;40m# pspman\033[0m
 
-        \033[0;97;40m# until command -v pspman >/dev/null; \
-do pip uninstall -y pspman >/dev/null; done\033[0m
+        \033[0;94mIf you wish to install afresh...(Why really?)\033[0m
 
-        2) Remove pspman clone from its standard location: type without '# ':
+        - Uninstall pspman using \033[1;97;40mpip\033[0m: run without '# ':
+
+        \033[0;97;40m# pip uninstall -y pspman\033[0m
+
+        - Remove pspman clone from its standard location: run without '# ':
 
         \033[0;97;40m# rm -rf \"${pspbase}/src/pspman\"\033[0m
 
-        ... and initiate installation again:
+        ... and initiate installation again: run without '# ':
+
+        \033[097;40m# $0 $@\033[0m
 
         I am aborting for now without making any changes.
 "
@@ -62,6 +68,23 @@ function create_temp_install() {
 function inst_fail() {
     echo "Failed installing $1"
     echo "aborting..."
+    cd "{$workpwd}"
+    exit 1
+}
+
+
+function uninstall_fail() {
+    echo "Failed uninstalling $1"
+    echo "aborting..."
+    echo "you may perform a manual uninstallation by:"
+    echo "1) removing default pspman folder"
+    echo "rm -rf ${HOME}/.pspman"
+    echo "2) removing pspman config folder"
+    echo "rm -rf ${HOME}/.config/pspman"
+    echo "AND/OR:"
+    echo "rm -rf ${XDG_CONFIG_HOME}/pspman [if XDG_CONFIG_HOME is set]"
+    echo "3) deleting from bashrc everything between ### PSPMAN MOD ###"
+    echo ""
     cd "{$workpwd}"
     exit 1
 }
@@ -168,10 +191,11 @@ function get_meson() {
 
 function check_dep() {
     dep="$1"
-    if ! test "$(command -v $dep)"; then
+    if ! command -v "$dep" &>/dev/null; then
         echo "${dep} is not installed"
-        echo "1. (Recommended) install ${dep} and run this script"
-        echo "2. (Discouraged) try installing ${dep} locally"
+        echo "1. (Recommended) Install ${dep} and run this script"
+        echo "2. (Discouraged) Try installing ${dep} locally \
+(THIS WILL GENERALLY FAIL)"
         echo -e "[1/2]:\t"
         read choice
         if [[ "${choice}" != "2" ]]; then
@@ -179,7 +203,7 @@ function check_dep() {
             exit 0
         fi
         echo "Trying a local install of ${dep} this is not a good idea!"
-        get_${dep}
+        get_${dep} || inst_fail "${dep}"
     fi
 }
 
@@ -204,15 +228,16 @@ pspman/master/install_scripts/_install.py" || inst_fail "pspman (download)"
 
 
     python3 ./_install.py doinstall || \
-        inst_fail pspman via bootstrap
+        inst_fail "pspman via bootstrap"
 
     python3 -m pip install --prefix="${pspbase}" -U pspman || \
-        inst_fail pspman# Temporary
+        inst_fail "pspman# Temporary"
 
-    python3 -m pspman -s -i https://github.com/pradyparanjpe/pspman.git \
-        || inst_fail pspman
+    python3 -m pspman -s -i "https://github.com/pradyparanjpe/pspman.git" \
+        || inst_fail "pspman"
 
-    python3 -m pip install --prefix "${pspbase}" -U "${pspbase}/src/pspman"
+    python3 -m pip install --prefix "${pspbase}" -U "${pspbase}/src/pspman" ||\
+        inst_fail "pspman"
 
     pspman version || inst_fail "pspman"
 
@@ -225,22 +250,15 @@ pspman/master/install_scripts/_install.py" || inst_fail "pspman (download)"
 
 function del_pspman() {
     cd "${HOME}" || exit
-    count=10
-    until command -v pspman >/dev/null; do
-        pip uninstall -y pspman >>/dev/null
-        if [[ $count -lt 1 ]]; then
-            exit 1
-        fi
-        count=$(( count - 1 ))
-        echo "Tried uninstalling pspman, failed ${count} times"
-    done
-    count=
+    pip uninstall -y pspman >>/dev/null
     rm -rf "${inst_temp_dir}"
     cd "$workpwd" || exit
 }
 
 function uninstall() {
-    python3 ./_install.py douninstall
+    wget "https://raw.githubusercontent.com/pradyparanjpe/\
+pspman/master/install_scripts/_install.py" || inst_fail "pspman (download)"
+    python3 _install.py douninstall
     del_pspman
 }
 

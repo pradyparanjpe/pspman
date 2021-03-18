@@ -46,6 +46,11 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
         registered gitprojects
 
     '''
+    # Child subprocesses write multiple GitProject state entries
+    # The last entry is safe_loaded by yml parser
+    # DELETE registers project name as ``None``
+    # TODO: maintain a database of -c directories in ${XDG_CONFIG_HOME}/pspman/
+
     db_path = os.path.join(env.clone_dir, fname)
     git_projects: typing.Dict[str, GitProject]= {}
     if not os.path.isfile(db_path):
@@ -54,19 +59,24 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
             return git_projects
         # backup exists
         with open(db_path + '.bak', 'r') as db_handle:
-             db = yaml.load(db_handle, Loader=yaml.Loader)
+             d_base = yaml.load(db_handle, Loader=yaml.Loader)
     else:
         # database file does exist
         with open(db_path, 'r') as db_handle:
-            db = yaml.load(db_handle, Loader=yaml.Loader)
+            d_base = yaml.load(db_handle, Loader=yaml.Loader)
 
         # Copy a backup
         # Older backup (if it exists) is erased
         os.rename(db_path, db_path + '.bak')
 
+    if d_base is None:
+        return git_projects
     # Load Git Projects
-    for name, gp_data in db.items():
-        git_projects[name] = GitProject(data=gp_data)
+    for name, gp_data in d_base.items():
+        if gp_data is not None:
+            git_projects[name] = GitProject(data=gp_data)
+        else:
+            print(f"{name} has been deleted.", mark='warn')
     return git_projects
 
 
@@ -106,6 +116,13 @@ def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
         discovered_projects[leaf] = GitProject(url=url, name=leaf)
         discovered_projects[leaf].type_install(env=env)
     git_projects.update({**discovered_projects, **healthy_db, **fail_db})
+
+    # Leave a memory of read database
+    with open(os.path.join(env.clone_dir,
+                           '.pspman.healthy.yml'), 'w') as mem_handle:
+        for name, project in git_projects.items():
+            if project is not None:
+                yaml.dump({name: project.__dict__}, mem_handle)
     return git_projects
 
 

@@ -93,6 +93,7 @@ def git_comm(
             * list: list git projects (default)
             * pull: pull and update
             * (url, name): clone a new project identified by (url, name)
+
                 * url: remote url to clone
                 * name: name (path) of project
 
@@ -108,10 +109,10 @@ def git_comm(
 
     # process kwargs
     if prockwargs is None:
-        prockwargs: typing.Dict[str, str] = {}
+        prockwargs = {}
 
     if gitkwargs is None:
-        gitkwargs: typing.Dict[str, typing.Optional[str]] = {}
+        gitkwargs = {}
 
     if isinstance(motive, str):
         if motive == 'pull':
@@ -120,10 +121,10 @@ def git_comm(
             cmd.extend(("-C", clone_dir, 'remote', "-v"))
     else:
         if not isinstance(motive, (tuple, list)) or len(motive) != 2:
-            return False
+            return None
         url, name = motive
         if not(isinstance(url, str) and isinstance(name, str)):
-            return False
+            return None
         cmd.extend(('-C', os.path.split(clone_dir)[0], 'clone', url, name))
 
     # Parse gitkwargs into arguments
@@ -133,5 +134,5 @@ def git_comm(
         if val is not None:
             cmd.append(str(val))
 
-    return process_comm(*cmd, p_name=f'git {motive}',
+    return process_comm(*cmd, p_name=f'git {motive}', timeout=None,
                         fail_handle='report', **prockwargs)

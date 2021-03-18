@@ -344,8 +344,9 @@ class DeleteQueue(TermQueue):
         '''
         run on success
         '''
-        if self.downstream_qs['success'] is not None:
-            self.downstream_qs['success'].add(None)
+        with open(os.path.join(self.env.clone_dir,
+                               '.pspman.healthy.yml'), 'a') as db_handle:
+            yaml.dump({project.name: None}, db_handle)
 
 class InstallQueue(PSPQueue):
     '''

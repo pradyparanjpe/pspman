@@ -100,9 +100,11 @@ def clone(
     if project.url is None:
         print(f'URL for {project.name} was not supplied', mark='err')
         return project.name, project.tag, False
+    gitkwargs: typing.Dict[str, typing.Optional[str]] = {}
+    if project.branch is not None:
+        gitkwargs['branch'] = project.branch
     success = git_comm(clone_dir=os.path.join(env.clone_dir, project.name),
-                       motive=(project.url, project.name),
-                       gitkwargs={'branch': project.branch})
+                       motive=(project.url, project.name), gitkwargs=gitkwargs)
     if success is None:
         # STDERR thrown
         print(f'Failed to clone source of {project.name}', mark='fclone')
