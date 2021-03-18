@@ -75,8 +75,6 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
     for name, gp_data in d_base.items():
         if gp_data is not None:
             git_projects[name] = GitProject(data=gp_data)
-        else:
-            print(f"{name} has been deleted.", mark='warn')
     return git_projects
 
 

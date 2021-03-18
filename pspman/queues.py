@@ -38,7 +38,7 @@ from . import print
 from .classes import InstallEnv, GitProject, GitProjEncoder
 from .actions import delete, clone, update, install, success, failure
 from .errors import ClosedQueueError
-from .tag import TAG_ACTION
+from .tag import TAG_ACTION, RET_CODE
 
 
 class PSPQueue:
@@ -143,7 +143,7 @@ class PSPQueue:
         self._running = True
         while len(self.queue):
             with multiprocessing.Pool(self._parallel) as pool:
-                results: typing.List[typing.Tuple[str, int, bool]] = list(
+                results: typing.List[typing.Tuple[str, int, int]] = list(
                     pool.map_async(self.action,
                                    ((self.env, project) for
                                     project in self.queue.values())).get())
@@ -151,9 +151,9 @@ class PSPQueue:
                 project = self.queue[res[0]]
                 del self.queue[res[0]]
                 project.tag = res[-2]
-                if res[-1]:
+                if res[-1] == RET_CODE['pass']:
                     self.on_success(project)
-                else:
+                elif res[-1] == RET_CODE['fail']:
                     self.on_failure(project)
         self._running = False
 
@@ -288,15 +288,6 @@ class PSPQueue:
         return '\n'.join(represent)
 
 
-class FailQueue(PSPQueue):
-
-    '''
-    Queue to reguster Successful objects
-    '''
-    def __init__(self, env: InstallEnv, **kwargs):
-        super().__init__(env=env, action=failure, q_type='fail', **kwargs)
-
-
 class TermQueue(PSPQueue):
     '''
     Terminal queues that do not have a downstream action queue
@@ -329,6 +320,15 @@ class SuccessQueue(TermQueue):
     '''
     def __init__(self, env: InstallEnv, **kwargs):
         super().__init__(env=env, action=success, q_type='success', **kwargs)
+
+
+class FailQueue(TermQueue):
+
+    '''
+    Queue to reguster Successful objects
+    '''
+    def __init__(self, env: InstallEnv, **kwargs):
+        super().__init__(env=env, action=failure, q_type='fail', **kwargs)
 
 
 class DeleteQueue(TermQueue):

@@ -77,9 +77,6 @@ def call() -> int:
                          queues=queues, to_add_list=env.install)
         if not env.stale:
             update_projects(env=env, git_projects=git_projects, queues=queues)
-        else:
-            for project in git_projects.values():
-                queues['success'].add(project)
         for q_name in 'pull', 'clone':
             if q_name in queues:
                 if env.verbose:

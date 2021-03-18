@@ -78,3 +78,13 @@ FAIL_TAG: typing.Dict[int, str] = {
 '''
 tag(ing): Action-failure codes
 '''
+
+
+RET_CODE: typing.Dict[str, int] = {
+    'pass': 1,
+    'fail': 0,
+    'asis': -1, # not modified
+}
+'''
+Codes returned by functions in ``action`` module
+'''
