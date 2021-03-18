@@ -47,6 +47,8 @@ from .classes import InstallEnv, GitProject
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION, RET_CODE
 from .installations import (install_make, install_pip,
                             install_meson, install_go, install_cmake)
+from .uninstallations import (remove_make, remove_pip,
+                              remove_meson, remove_go, remove_cmake)
 
 
 def delete(
@@ -67,19 +69,41 @@ def delete(
 
     '''
     env, project = args
-    print_info = f'''
-    Deleting {project.name}
-
-    I can't guess which files were installed. So, leaving those scars behind...
+    print(f'''
+    Removing {project.name}.
 
     This project may be added again using:
     pspman -i {project.url}
+    ''', mark='delete' )
+    inst_tag = project.tag & 0xf0
+    if inst_tag:
+        # Attempt uninstallation
+        if env.verbose:
+            print( f'''
+            Trying standard uninstall calls with {TAG_ACTION[inst_tag]}.
+            This may not always be clean; some scars may stay back.
+            ''', mark='delete')
 
-    '''
+        remove_call: typing.Callable = {
+            0x10: remove_make, 0x20: remove_pip, 0x30: remove_meson,
+            0x40: remove_go, 0x80: remove_cmake
+        }.get(inst_tag, lambda **_: True)
+        success = remove_call(code_path=os.path.join(env.clone_dir,
+                                                     project.name),
+                              prefix=env.prefix, argv=project.inst_argv,
+                              env=project.sh_env)
+        if not success:
+            if env.verbose:
+                print(f'FAILED Uninstalling project {project.name}',
+                      mark='fdelete')
+                print(f'Proceeding to delete the source code anyway...',
+                      mark='info')
 
+    # Erase source code
+    if env.verbose:
+        print('Erasing source code', mark='delete')
     try:
         shutil.rmtree(os.path.join(env.clone_dir, project.name))
-        print(print_info, mark='delete')
         return project.name, project.tag & (0xff - ACTION_TAG['delete']),\
             RET_CODE['pass']
     except OSError:
@@ -179,8 +203,9 @@ def install(
             print(f'Not trying to install {project.name}', mark='bug')
         return project.name, tag, RET_CODE['asis']
     install_call: typing.Callable = {
-        1: install_make, 2: install_pip, 3: install_meson, 4: install_go,
-        8: install_cmake}.get(int(project.tag//0x10), lambda **_: True)
+        0x10: install_make, 0x20: install_pip, 0x30: install_meson,
+        0x40: install_go, 0x80: install_cmake
+    }.get(project.tag&0xf0, lambda **_: True)
     success = install_call(code_path=os.path.join(env.clone_dir, project.name),
                            prefix=env.prefix, argv=project.inst_argv,
                            env=project.sh_env)
@@ -238,7 +263,7 @@ def failure(
         print("Failed", project.name, mark='finstall')
         if env.verbose:
             if project.tag > 0x10:
-                install_method = project.tag & 0xF0
+                install_method = project.tag & 0xf0
                 print(f'{FAIL_TAG[install_method]} for {project.name}',
                       mark='finstall')
     elif project.tag & ACTION_TAG['pull']:

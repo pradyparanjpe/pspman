@@ -18,7 +18,7 @@
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
 '''
-Automated installations
+Automated Uninstallations
 
 '''
 
@@ -47,10 +47,10 @@ def prep_arg_env(argv: typing.List[str] = None, env: typing.Dict[str, str]
     return argv, mod_env
 
 
-def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
+def remove_make(code_path: str, prefix=str, argv: typing.List[str] = None,
                  env: typing.Dict[str, str] = None) -> bool:
     '''
-    Install repository using `make`
+    Remove repository using `make`
 
     Args:
         code_path: path to source-code
@@ -59,7 +59,7 @@ def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
         env: Modifications in shell environment variables during installation
 
     Returns:
-        ``False`` if error/failure during installation, else, ``True``
+        ``False`` if source-code can't be removed, else, ``True``
 
     '''
     incl = os.path.join(prefix, 'include')
@@ -70,27 +70,18 @@ def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
         include = "-I", incl
     if os.path.isdir(libs):
         library = "-I", libs
-    configure = os.path.join(code_path, 'configure')
     argv, mod_env = prep_arg_env(argv, env)
-    if os.path.exists(configure):
-        conf_out = process_comm(configure, '--prefix', prefix, *argv,
-                                env=mod_env, fail_handle='report')
-        if conf_out is None:
-            return False
     if os.path.isfile(os.path.join(code_path, './Makefile')):
-        make_out = process_comm('make', *include, *library, incl, libs, '-C',
-                                code_path, env=mod_env, fail_handle='report')
-        if make_out is None:
-            return False
         return bool(process_comm('make', *include, *library, '-C', code_path,
-                                 'install', env=mod_env, fail_handle='report'))
+                                 'uninstall', env=mod_env,
+                                 fail_handle='report'))
     return False
 
 
-def install_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
+def remove_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
                 env: typing.Dict[str, str] = None) -> bool:
     '''
-    Install repository using `cmake`
+    Remove repository using `cmake`
 
     Args:
         code_path: path to source-code
@@ -99,7 +90,7 @@ def install_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
         env: Modifications in shell environment variables during installation
 
     Returns:
-        ``False`` if error/failure during installation, else, ``True``
+        ``False`` if source-code can't be removed, else, ``True``
 
     '''
     argv, mod_env = prep_arg_env(argv, env)
@@ -115,7 +106,7 @@ def install_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
     os.makedirs(build_dir, exist_ok=True)
 
     # cmake build
-    stdout = process_comm('cmake', '-D', f'CMAKE_INSTALL_PREFIX={prefix}',
+    stdout = process_comm('cmake', '-D', f'CMAKE_REMOVE_PREFIX={prefix}',
                           '-B', build_dir, 'build', *argv, '-S', code_path,
                           fail_handle='report')
     if stdout is None:
@@ -124,22 +115,18 @@ def install_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
     if not os.path.isfile(os.path.join(build_dir, 'Makefile')):
         shutil.rmtree(build_dir)
         return False
-    make_pass = process_comm('make', *include, *library, '-C', build_dir,
-                             env=mod_env, fail_handle='report')
-    if make_pass is None:
-        shutil.rmtree(build_dir)
-        return False
-    make_install = process_comm('make', *include, *library, '-C', build_dir,
-                                'install', env=mod_env, fail_handle='report')
+    make_remove = process_comm('make', *include, *library, '-C', build_dir,
+                               'uninstall', env=mod_env, fail_handle='report')
     shutil.rmtree(build_dir)
-    return bool(make_install)
+    return bool(make_remove)
 
 
 
-def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
+def remove_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
                 env: typing.Dict[str, str] = None) -> bool:
     '''
-    Install repository using `pip`
+    Remove repository using `pip`.
+    This may also affect --user's installation.
 
     Args:
         code_path: path to source-code
@@ -148,26 +135,19 @@ def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
         env: Modifications in shell environment variables during installation
 
     Returns:
-        ``False`` if error/failure during installation, else, ``True``
+        ``False`` if source-code can't be removed, else, ``True``
 
     '''
     argv, mod_env = prep_arg_env(argv, env)
-    requirements_file_path = os.path.join(code_path, 'requirements.txt')
-    if os.path.exists(requirements_file_path):
-        pip_req = process_comm('python3', '-m', 'pip', 'install', '--prefix',
-                               prefix, '-U', '-r', requirements_file_path,
-                               env=mod_env, fail_handle='report')
-        if pip_req is None:
-            return False
-    return bool(process_comm('python3', '-m', 'pip', 'install', '--prefix',
-                             prefix, '-U', *argv, code_path, env=mod_env,
-                             fail_handle='report'))
+    name = os.path.split(code_path)[-1]
+    return bool(process_comm('python3', '-m', 'pip', 'uninstall', '-y', name,
+                             env=mod_env, fail_handle='report'))
 
 
-def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
+def remove_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
                   env: typing.Dict[str, str] = None) -> bool:
     '''
-    Install repository by building with `ninja/json`
+    Remove repository by building with `ninja/json`
 
     Args:
         code_path: path to source-code
@@ -176,15 +156,12 @@ def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
         env: Modifications in shell environment variables during installation
 
     Returns:
-        ``False`` if error/failure during installation, else, ``True``
+        ``False`` if source-code can't be removed, else, ``True``
     '''
     argv, mod_env = prep_arg_env(argv, env)
     subproject_dir = os.path.join(code_path, 'subprojects')
     os.makedirs(subproject_dir, exist_ok=True)
 
-    # if execution could reach here, -f is assumed for subprocess
-    _ = process_comm('pspman', '-f', '-c', subproject_dir, '-p', prefix,
-                     env=mod_env, fail_handle='report')
     build_dir = os.path.join(prefix, 'temp_build', 'meson')
     os.makedirs(build_dir, exist_ok=True)
     build = process_comm('meson', '--buildtype=release', '--prefix', prefix,
@@ -194,16 +171,17 @@ def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
     if build is None:
         shutil.rmtree(build_dir)
         return False
-    meson_install = process_comm('meson', 'install', '-C', build_dir,
-                                 env=mod_env, fail_handle='report')
+    meson_remove = process_comm('meson', 'uninstall', '-C', build_dir,
+                                env=mod_env, fail_handle='report')
     shutil.rmtree(build_dir)
-    return bool(meson_install)
+    return bool(meson_remove)
 
 
-def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
+def remove_go(code_path: str, prefix=str, argv: typing.List[str] = None,
                env: typing.Dict[str, str] = None) -> bool:
     '''
-    Install repository using `go`
+    Remove repository using `go`
+    This will always fail, since go uninstall recipe is not implemented.
 
     Args:
         code_path: path to source-code
@@ -212,11 +190,8 @@ def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
         env: Modifications in shell environment variables during installation
 
     Returns:
-        ``False`` if error/failure during installation, else, ``True``
+        ``False``
 
     '''
     argv, mod_env = prep_arg_env(argv, env)
-    mod_env['GOROOT'] = prefix
-    mod_env['GOPATH'] = prefix
-    return bool(process_comm('go', 'install', '-i', *argv, '-pkgdir',
-                             code_path, env=mod_env, fail_handle='report'))
+    return False

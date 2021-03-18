@@ -112,7 +112,7 @@ class PSPQueue:
         client.connect(name)
         return server, client
 
-    def add(self, project: GitProject) -> None:
+    def add(self, project: GitProject = None) -> None:
         '''
         Parent: Add project to queue at the end
 
@@ -120,11 +120,13 @@ class PSPQueue:
             project: project to queue
 
         '''
-        if not self._client._closed:  # type: ignore
-            # send this to child
-            self.copy_to_server(project)
-        else:
-            raise ClosedQueueError(self)
+        if project is not None:
+            # Not a Zombie project
+            if not self._client._closed:  # type: ignore
+                # send this to child
+                self.copy_to_server(project)
+            else:
+                raise ClosedQueueError(self)
 
     def __len__(self) -> int:
         '''
@@ -347,6 +349,8 @@ class DeleteQueue(TermQueue):
         with open(os.path.join(self.env.clone_dir,
                                '.pspman.healthy.yml'), 'a') as db_handle:
             yaml.dump({project.name: None}, db_handle)
+        if self.downstream_qs['success'] is not None:
+            self.downstream_qs['success'].add(None)
 
 class InstallQueue(PSPQueue):
     '''
