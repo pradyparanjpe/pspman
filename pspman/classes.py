@@ -126,15 +126,10 @@ class GitProject():
     Git project object.
 
     Args:
-        url: url for git remote
-        name: name of project folder
-        **kwargs: hard set
+        **kwargs:
 
-            * tag: int: override with custom tag
+            * args corresponding to Attributes: hard set
             * data: Dict[str, Any]: load data
-            * branch: str: git branch to be cloned
-            * sh_env: Dict[str, str]: shell env alterations for installation
-            * inst_argv: List[str]: arguments suffixed to optional args
             * rest are ignored
 
     Attributes:
@@ -148,20 +143,21 @@ class GitProject():
         last_updated: last updated on datetime
 
     '''
-    def __init__(self,
-                 url: str = None,
-                 name: str = None,
-                 **kwargs) -> None:
-        self.url = url
-        self.tag = int(kwargs['tag']) if 'tag' in kwargs else 0
+    def __init__(self, **kwargs) -> None:
+        self.url: str = kwargs.get('url', None)
+        self.tag = int(kwargs.get('tag', 0))
         self.branch: typing.Optional[str] = kwargs.get('branch')
-        self.last_updated: typing.Optional[float] = None
+        self.last_updated: typing.Optional[float] = kwargs.get('last_updated')
         self.inst_argv: typing.List[str] = kwargs.get('inst_argv', [])
         self.sh_env: typing.Dict[str, str] = kwargs.get('sh_env', {})
-        self.pull: bool = False
+        self.pull: bool = kwargs.get('pull', False)
+
+        # Infer from parent.__dict__
         if kwargs.get('data') is not None:
             self.merge(kwargs['data'])
-        self.name = name or self.update_name()
+            del kwargs['data']
+
+        self.name = kwargs.get('name', self.update_name())
 
     def update_name(self) -> str:
         '''
@@ -170,6 +166,7 @@ class GitProject():
 
         Returns:
             The updated name
+
         '''
         if hasattr(self, 'name'):
             return self.name

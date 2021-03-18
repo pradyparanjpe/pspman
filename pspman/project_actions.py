@@ -79,7 +79,8 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
 
 
 def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
-              = None) -> typing.Dict[str, GitProject]:
+              = None) -> typing.Tuple[typing.Dict[str, GitProject],
+                                      typing.Dict[str, GitProject]]:
     '''
     Locate git projects in the defined `environment` (parse)
     Load database (overrides parser)
@@ -113,7 +114,7 @@ def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
         url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
         discovered_projects[leaf] = GitProject(url=url, name=leaf)
         discovered_projects[leaf].type_install(env=env)
-    git_projects.update({**discovered_projects, **healthy_db, **fail_db})
+    git_projects.update({**discovered_projects, **healthy_db})
 
     # Leave a memory of read database
     with open(os.path.join(env.clone_dir,
@@ -121,32 +122,49 @@ def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
         for name, project in git_projects.items():
             if project is not None:
                 yaml.dump({name: project.__dict__}, mem_handle)
-    return git_projects
+    with open(os.path.join(env.clone_dir,
+                           '.pspman.fail.yml'), 'w') as mem_handle:
+        for name, project in fail_db.items():
+            if project is not None:
+                yaml.dump({name: project.__dict__}, mem_handle)
+    return git_projects, fail_db
 
 
-def print_projects(env: InstallEnv,
-                   git_projects: typing.Dict[str, GitProject] = None) -> int:
+def print_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
+                   = None, failed_projects: typing.Dict[str, GitProject]
+                   = None) -> int:
     '''
     List all available projects
 
     Args:
         env: Installation context
         git_projects: projects to print
+        failed_projects: projects that have been reported to have failed
 
     Returns:
         Error code
 
     '''
-    if git_projects is None or len(git_projects) == 0:
+    if git_projects is None:
+        git_projects = {}
+    if failed_projects is None:
+        failed_projects = {}
+    if len(git_projects) == 0 and len(failed_projects) == 0:
         print("No projects Cloned yet...", mark='warn')
         return 1
-    print(f'projects in {env.clone_dir}', end="\n\n", mark='info')
+    print(f'\nProjects in {env.clone_dir}', end="\n", mark='info')
     for project_name, project in git_projects.items():
         if env.verbose:
             print(repr(project), mark='list')
         else:
             remote = project.url or '!! Source URL Unavailable !!'
             print(f"{project_name}:\t{remote}", mark='list')
+    for project_name, project in failed_projects.items():
+        if env.verbose:
+            print(repr(project), mark='fail')
+        else:
+            remote = project.url or '!! Source URL Unavailable !!'
+            print(f"{project_name}:\t{remote}", mark='fail')
     return 0
 
 
@@ -190,6 +208,9 @@ def del_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject],
         if project_name not in git_projects:
             print(f"Couldn't find {project_name} in {env.clone_dir}", mark=3)
             print('Ignoring...', mark=0)
+            with open(os.path.join(env.clone_dir,
+                                   '.pspman.fail.yml'), 'a') as fail_handle:
+                yaml.dump({project_name: None}, fail_handle)
             continue
         project = git_projects[project_name]
         queues['delete'].add(project)
@@ -224,6 +245,8 @@ def _parse_inst(inst_input: str) -> typing.Tuple[str, typing.Optional[str],
     url, *args = inst_input.split("___")
     if args:
         branch, *args = args
+        if branch == '':
+            branch = None
         if args:
             inst_argv_str, *args = args
             if inst_argv_str.lower() in ('true', 'hold', 'pull', 'only'):
@@ -263,6 +286,7 @@ def add_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject],
         url, branch, inst_argv, sh_env, pull = _parse_inst(inst_input)
         new_project = GitProject(url=url, sh_env=sh_env, inst_argv=inst_argv,
                                  branch=branch, pull=pull)
+        print(repr(new_project), mark='bug')
         if os.path.isfile(os.path.join(env.clone_dir, new_project.name)):
             # name is a file, use .d directory
             print(f"A file named '{new_project}' already exists", mark=3)

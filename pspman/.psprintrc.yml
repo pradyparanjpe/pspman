@@ -77,3 +77,10 @@ fclone:
   pref_color: 'lr'
   pref_bgcol: 'k'
   text_color: 'r'
+
+fail:
+  pref: '!FAIL'
+  pref_s: '!'
+  pref_color: 'lr'
+  pref_bgcol: 'k'
+  text_color: 'r'

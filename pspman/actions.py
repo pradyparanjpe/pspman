@@ -57,8 +57,6 @@ def delete(
     '''
     Delete this project
 
-    TODO: Attempt make uninstall, pip uninstall, meson uninstall, etc...
-
     Args:
         args:
             * env: installation context
@@ -197,7 +195,7 @@ def install(
         project.name, project.tag, success code of action
     '''
     env, project = args
-    if not (project.tag & ACTION_TAG['install']):
+    if not (project.tag & ACTION_TAG['install']) or project.pull:
         tag = project.tag & (0xff - ACTION_TAG['install'])
         if env.verbose:
             print(f'Not trying to install {project.name}', mark='bug')

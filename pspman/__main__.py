@@ -62,10 +62,11 @@ def call() -> int:
     if env.verbose:
         print(env, mark='bug')
 
-    git_projects = find_gits(env=env)
+    git_projects, failed_projects = find_gits(env=env)
     if env.call_function == 'info':
         lock(env=env, unlock=True)
-        return print_projects(env=env, git_projects=git_projects)
+        return print_projects(env=env, git_projects=git_projects,
+                              failed_projects=failed_projects)
 
     queues = init_queues(env=env)
     try:

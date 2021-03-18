@@ -316,7 +316,6 @@ class TermQueue(PSPQueue):
 
 
 class SuccessQueue(TermQueue):
-
     '''
     Queue to reguster Successful objects
     '''
@@ -348,6 +347,9 @@ class DeleteQueue(TermQueue):
         '''
         with open(os.path.join(self.env.clone_dir,
                                '.pspman.healthy.yml'), 'a') as db_handle:
+            yaml.dump({project.name: None}, db_handle)
+        with open(os.path.join(self.env.clone_dir,
+                               '.pspman.fail.yml'), 'a') as db_handle:
             yaml.dump({project.name: None}, db_handle)
         if self.downstream_qs['success'] is not None:
             self.downstream_qs['success'].add(None)
