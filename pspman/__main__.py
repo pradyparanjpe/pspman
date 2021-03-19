@@ -28,9 +28,9 @@ from .psp_in import init, de_init
 from .config import GroupDB
 from . import ENV, CONFIG, print, __version__
 from .define import cli_opts, prepare_env, lock
-from .project_actions import (interrupt, find_gits, end_queues, init_queues,
-                              del_projects, add_projects, print_projects,
-                              update_projects, print_prefixes)
+from .serial_actions import (interrupt, find_gits, end_queues, init_queues,
+                             del_projects, add_projects, print_projects,
+                             update_projects, print_prefixes)
 
 
 def call() -> int:

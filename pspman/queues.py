@@ -36,7 +36,7 @@ import json
 import yaml
 from . import print
 from .classes import InstallEnv, GitProject, GitProjEncoder
-from .actions import delete, clone, update, install, success, failure
+from .fork_actions import delete, clone, update, install, success, failure
 from .errors import ClosedQueueError
 from .tag import TAG_ACTION, RET_CODE
 

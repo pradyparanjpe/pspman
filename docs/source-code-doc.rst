@@ -51,7 +51,7 @@ Action Definition by user call
 Project actions
 ===============
 
-.. automodule:: pspman.project_actions
+.. automodule:: pspman.serial_actions
    :members:
 
 ------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ Parallel Code
 actions
 =======
 
-.. automodule:: pspman.actions
+.. automodule:: pspman.fork_actions
    :members:
 
 installations
