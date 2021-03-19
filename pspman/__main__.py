@@ -66,7 +66,6 @@ def call() -> int:
         return 0
 
     if env.call_function == 'meta':
-        lock(env=env, unlock=True)
         return print_prefixes(env=env)
 
     env_err = prepare_env(env)
