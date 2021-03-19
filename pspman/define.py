@@ -31,11 +31,13 @@ import argparse
 import shutil
 import argcomplete
 from psprint import print
+from . import CONFIG
+from .config import MetaConfig
 from .classes import InstallEnv
 from .tools import timeout
 
 
-def cli() -> argparse.ArgumentParser:
+def cli(config: MetaConfig = None) -> argparse.ArgumentParser:
     '''
     Parse command line arguments
 
@@ -46,6 +48,7 @@ def cli() -> argparse.ArgumentParser:
         modified ``confing``
 
     '''
+    config = config or CONFIG
     description = '''
 
     \033[1;91mNOTICE: This is only intended for "user" packages.
@@ -54,8 +57,7 @@ def cli() -> argparse.ArgumentParser:
     '''
 
 
-    homedir = os.environ['HOME']
-    d_pref = os.path.join(homedir, ".pspman")
+    d_pref = config.data_dir
     parser = argparse.ArgumentParser(
         description=description,
         formatter_class=argparse.RawTextHelpFormatter
@@ -69,10 +71,20 @@ def cli() -> argparse.ArgumentParser:
         name='list', aliases=['info'],
         help='display list of cloned repositories and exit'
     )
+    list_gits.add_argument('--meta', '-m', action='store_true',
+                           help='List known C_DIR(s)')
+    init = sub_parsers.add_parser(name='init', aliases=['initialize'],
+                                  help='initialize pspman')
+    goodbye = sub_parsers.add_parser(name='goodbye', aliases=['de-initialize'],
+                                     help='Cleanup before uninstalling pspman')
+    init.set_defaults(call_function='init')
+    goodbye.set_defaults(call_function='goodbye')
     version.set_defaults(call_function='version')
     unlock.set_defaults(call_function='unlock')
     list_gits.set_defaults(call_function='info')
     parser.set_defaults(call_function=None)
+    parser.add_argument('--init', action='store_true',
+                        help='Initialize PSPMan')
     parser.add_argument('--version', action='store_true',
                         help='Display version and exit')
     parser.add_argument('-l', '--list', action='store_true', dest='info',
@@ -112,17 +124,25 @@ format: "URL[___branch[___'only'|___inst_argv[___sh_env]]]"
     return parser
 
 
-def cli_opts() -> typing.Dict[str, typing.Any]:
+def cli_opts(config: MetaConfig = None) -> typing.Dict[str, typing.Any]:
     '''
     Parse cli arguments to return its dict
     '''
+    config = config or CONFIG
     parser = cli()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
     if args.info:
         setattr(args, 'call_function', 'info')
+    if hasattr(args, 'meta'):
+        if args.meta:
+            setattr(args, 'call_function', 'meta')
+        else:
+            setattr(args, 'call_function', 'info')
     if args.version:
         setattr(args, 'call_function', 'version')
+    if args.init:
+        setattr(args, 'call_function', 'init')
     return vars(args)
 
 

@@ -58,13 +58,23 @@ class ClosedQueueError(PSPManError):
         ''')
 
 
-class GitURLError(PSPManError):
+class PathNameError(PSPManError):
+    '''
+    Path/URL (and hence or otherwise, name) can't be determined
+    '''
+    def __init__(self):
+        super(PSPManError, self).__init__(f'''
+        Path and/name not found/inferred
+        ''')
+
+
+class GitURLError(PathNameError):
     '''
     Git URL (and hence or otherwise, name) can't be determined
     '''
     def __init__(self):
         super(PSPManError, self).__init__(f'''
-        Git URL and/name not found/inferred
+        GIT URL and/name not found/inferred
         ''')
 
 

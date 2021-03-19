@@ -28,6 +28,7 @@ import subprocess
 
 PSPMAN_MARKERS = "### PSPMAN MOD ###"
 '''
+MIGRATED
 Markers that separate PSPMAN modifications from rest of code
 '''
 
@@ -45,6 +46,7 @@ fi
 %s
 ''' % (PSPMAN_MARKERS, PSPMAN_MARKERS)
 '''
+MIGRATED
 Redirect to ${XDG_CONFIG_HOME}/pspman/bashrc
 
 '''
@@ -52,6 +54,7 @@ Redirect to ${XDG_CONFIG_HOME}/pspman/bashrc
 
 def restore_bash() -> None:
     '''
+    MIGRATED
     Restore bashrc file
     '''
     bashrc_path = os.environ['HOME'] + '/.bashrc'
@@ -73,6 +76,7 @@ def restore_bash() -> None:
 
 def gen_mod_bash() -> str:
     '''
+    MIGRATED
     Generate text for bashrc modifier
 
     '''
@@ -103,6 +107,7 @@ export PYTHONPATH;
 
 def chg_bashrc() -> None:
     '''
+   MIGRATED
     Add environment variables
 
     '''

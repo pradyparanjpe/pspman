@@ -30,6 +30,7 @@ from datetime import timezone, datetime
 import json
 import yaml
 from psprint import print
+from .config import MetaConfig
 from .tag import ACTION_TAG
 from .errors import TagError, GitURLError
 
@@ -39,7 +40,7 @@ class InstallEnv():
     Installation variables
 
     Attributes:
-        call_function: sub-function called {version,info,unlock}
+        call_function: sub-function called {version,info,meta,unlock}
         clone_dir: base directory to clone src
         prefix: `prefix` for installation
         risk: risk root
@@ -51,34 +52,20 @@ class InstallEnv():
 
 
     Args:
+        config: MetaConfig to determine default values
         **kwargs: hard set `attributes`
 
     '''
-    def __init__(self, **kwargs):
-        self.call_function: typing.Optional[str] = None
-        self._clone_dir: typing.Optional[str] = None
-        self._prefix: typing.Optional[str] = None
-        self.risk: bool = False
-        self.pull: bool = False
-        self.stale: bool = False
-        self.verbose: bool = False
-        self.install: typing.List[str] = []
-        self.delete: typing.List[str] = []
-        self.update(kwargs)
-
-    @property
-    def prefix(self) -> str:
-        if self._prefix is None:
-            self._prefix = os.path.join(os.environ['HOME'], ".pspman")
-        return self._prefix
-
-    @prefix.setter
-    def prefix(self, value):
-        self._prefix = value
-
-    @prefix.deleter
-    def prefix(self):
-        self._prefix = os.path.join(os.environ['HOME'], ".pspman")
+    def __init__(self, config: MetaConfig, **kwargs):
+        self.call_function: typing.Optional[str] = kwargs.get('call_function')
+        self._clone_dir: typing.Optional[str] = kwargs.get('clone_dir')
+        self.prefix: str = kwargs.get('prefix', config.data_dir)
+        self.risk: bool = kwargs.get('risk', False)
+        self.pull: bool = kwargs.get('pull', False)
+        self.stale: bool = kwargs.get('stale', False)
+        self.verbose: bool = kwargs.get('verbose', False)
+        self.install: typing.List[str] = kwargs.get('install', [])
+        self.delete: typing.List[str] =  kwargs.get('delete', [])
 
     @property
     def clone_dir(self) -> str:
@@ -114,6 +101,9 @@ class InstallEnv():
     def update(self, options: typing.Dict[str, object]) -> 'InstallEnv':
         '''
         Update attributes with those from options
+
+        Args:
+            options: hard-set config
         '''
         for key, value in options.items():
             if hasattr(self, key):
@@ -157,7 +147,7 @@ class GitProject():
             self.merge(kwargs['data'])
             del kwargs['data']
 
-        self.name = kwargs.get('name', self.update_name())
+        self.name: str = kwargs.get('name', self.update_name())
 
     def update_name(self) -> str:
         '''

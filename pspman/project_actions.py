@@ -27,7 +27,8 @@ import os
 import typing
 import re
 import yaml
-from . import print
+from .config import MetaConfig
+from . import print, CONFIG
 from .shell import git_comm
 from .classes import InstallEnv, GitProject
 from .queues import (PSPQueue, PullQueue, FailQueue, CloneQueue,
@@ -49,7 +50,6 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
     # Child subprocesses write multiple GitProject state entries
     # The last entry is safe_loaded by yml parser
     # DELETE registers project name as ``None``
-    # TODO: maintain a database of -c directories in ${XDG_CONFIG_HOME}/pspman/
 
     db_path = os.path.join(env.clone_dir, fname)
     git_projects: typing.Dict[str, GitProject]= {}
@@ -168,6 +168,23 @@ def print_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
     return 0
 
 
+def print_prefixes(env: InstallEnv, config: MetaConfig = None):
+    '''
+    Print MetaConfig
+
+    Args:
+        config: pspman configuration
+    '''
+    config = config or CONFIG
+    print("Directories known to contain git clones:", mark='info')
+    for name, group in config.meta_db_dirs.items():
+        if env.verbose:
+            print(group, mark='list')
+        else:
+            print(group.name, group.path, mark='list')
+    return 0
+
+
 def init_queues(env: InstallEnv,) -> typing.Dict[str, PSPQueue]:
     '''
     Initiate success queues
@@ -264,6 +281,7 @@ def _parse_inst(inst_input: str) -> typing.Tuple[str, typing.Optional[str],
                     var, val = var_val.split("=")
                     sh_env[var] = val
     return url, branch, inst_argv, sh_env, pull
+
 
 def add_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject],
                  queues: typing.Dict[str, PSPQueue], to_add_list:

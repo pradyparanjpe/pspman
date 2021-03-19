@@ -27,6 +27,7 @@ PSPMAN: **PS**\ eudo **P**\ ackage **Man**\ ager
 import os
 from psprint import init_print
 from .classes import InstallEnv
+from .config import read_config
 
 
 print = init_print(os.path.join(os.path.dirname(__file__),
@@ -37,8 +38,15 @@ Customized psprint function
 '''
 
 
+# ConfigBase
+CONFIG = read_config()
+'''
+Meta data information about C_DIR(s), configuration directory, etc
+'''
+
+
 # set configurations
-ENV = InstallEnv()
+ENV = InstallEnv(CONFIG)
 '''
 Standard installation context
 '''

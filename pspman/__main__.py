@@ -24,12 +24,13 @@ python module call
 
 import os
 import typing
-from . import ENV, print, __version__
+from .psp_in import init, de_init
+from .config import GroupDB
+from . import ENV, CONFIG, print, __version__
 from .define import cli_opts, prepare_env, lock
-from .project_actions import (
-    interrupt, find_gits, end_queues, init_queues, del_projects, add_projects,
-    print_projects, update_projects,
-)
+from .project_actions import (interrupt, find_gits, end_queues, init_queues,
+                              del_projects, add_projects, print_projects,
+                              update_projects, print_prefixes)
 
 
 def call() -> int:
@@ -45,11 +46,28 @@ def call() -> int:
         Error code to system
 
     '''
-    env = ENV.update(cli_opts())
+    env = ENV.update(cli_opts(CONFIG))
+
+    if env.call_function == 'goodbye':
+        de_init(CONFIG)
+        return 0
+
+    if env.call_function == 'init':
+        init(CONFIG)
+        CONFIG.add(GroupDB(path=CONFIG.data_dir, name='default'))
+        return 0
+
+    if 'default' not in CONFIG.meta_db_dirs:
+        # not initiated
+        return 1
 
     if env.call_function == 'version':
         print(__version__, mark='info', pref='VERSION')
         return 0
+
+    if env.call_function == 'meta':
+        lock(env=env, unlock=True)
+        return print_prefixes(env=env)
 
     env_err = prepare_env(env)
     if env_err != 0:
@@ -92,6 +110,9 @@ def call() -> int:
         end_queues(env=env, queues=queues)
         lock(env=env, unlock=True)
         print()
+        CONFIG.add({'path': env.prefix})
+        CONFIG.prune()
+        CONFIG.store()
         print('done.', mark=1)
     except KeyboardInterrupt:
         interrupt(queues)
