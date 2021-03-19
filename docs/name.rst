@@ -1,8 +1,13 @@
+#########
+Evolution
+#########
+
+****
 Name
-----
+****
 
 I started organizing and auto-updating my bio-informatics git clones using
-a short ad-hoc bash script that I called **gitman** (Git Manager)
+a short ad-hoc bash script that I called `gitman` (GIT MANager)
 
 
 Futher `gitman` got bloated into **bspman**\ , \
@@ -11,8 +16,6 @@ Futher `gitman` got bloated into **bspman**\ , \
 **B**\ ash **S**\ cript **P**\ ackage **Man**\ ager.
 
 
-pspman
-~~~~~~
 Since my Mother\ *bored*\ -tongue is python, \
 `bspman` had to evolve into **pspman**\ , \
 **P**\ ythonic **S**\ mall **P**\ ackage **Man**\ ager; \
@@ -27,3 +30,7 @@ Also,
 - `pspman` doesn't manage packages. You do.
 
 So, I call it **PS**\ eudo **P**\ ackage **Man**\ ager.
+
+**OR** equally correctly, \
+
+**P**\ ersonal **S**\ ubsystem **P**\ ackage **Man**\ ager.

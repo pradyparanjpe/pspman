@@ -1,5 +1,5 @@
 PREREQUISITES
--------------
+=============
 
 - `git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`__
 - `python3 <https://www.python.org/downloads/>`__
@@ -8,104 +8,70 @@ PREREQUISITES
 - `go <https://golang.org/doc/install>`__ (for ``go install``)
 - `meson/ninja <https://mesonbuild.com/Getting-meson.html>`__ (for meson build, ninja install)
 - `bash <https://www.gnu.org/software/bash/>`__
-    - Although ``pspman`` itself does not require `bash`, the installation script is written in `bash`. You may translate it to a shell of your choice if you wish. Also, all exports (PATH, PYTHONPATH) are made for `bash`. If you use any other shell, you need to export PATH and PYTHONPATH as described in section :ref:`export_1`
+    - Although ``pspman`` itself does not require `bash`, all exports (PATH, PYTHONPATH) are made for `bash`, which is a commonly used shell. If you use any other shell, you need to export PATH and PYTHONPATH. A pull request on `init <https://github.com/pradyparanjpe/pspman/blob/master/pspman/psp_in.py>`__ is welcome.
 
 INSTALL
--------
+=======
 
 Windows
-~~~~~~~
+-------
+
 Sorry
 
+
 Apple
-~~~~~
+-----
+
 This App might not work for you, since you didn’t have to pay for it.
 Also, it doesn't follow a `click-click-click done` approach. So, don't install it.
 
 Linux
-~~~~~
-- REMEMBER, this is LGPLv3 (No warranty, your own risk, no guarantee of utility)
+-----
 
-Using bash script
-^^^^^^^^^^^^^^^^^
--  copy installation script from `this <https://github.com/pradyparanjpe/pspman.git>`__ repository
+REMEMBER, this is LGPLv3 (No warranty, your own risk, no guarantee of utility)
 
-.. code:: sh
-
-   wget https://raw.githubusercontent.com/pradyparanjpe/pspman/master/install_scripts/install.sh
-
--  Run Installation script
+-  install using `pip <https://pip.pypa.io/en/stable/installing/>`__
 
 .. code:: sh
 
-   bash ./install.sh install
+   pip install -U pspman
 
-- Clean up: you may safely delete the installation script, and the aid script that it downloads
-
-.. code:: sh
-
-   rm ./install.sh ./_install.py
-
-.. _export_1:
-
-Using pip
-^^^^^^^^^
-- This option is described `just because` pspman is a python package.
-
-- Create directories: ``${HOME}/.pspman``
+- run pspman init
 
 .. code:: sh
 
-   mkdir -p "${HOME}/.pspman/src" "${HOME}/.pspman/bin" "${HOME}/.pspman/lib"
+   pspman init
 
--  install using pip
+.. _recommended:
+
+self-management
+~~~~~~~~~~~~~~~
+
+(optional, recommended)
 
 .. code:: sh
 
-   pip install --prefix="${HOME}/.pspman" -U pspman
-
-- arrange to export PYTHONPATH and PATH, Ex. by adding to ``${HOME}/.bashrc``:
-
-.. code:: sh
-
-   python_ver="$(python --version |cut -d "." -f1,2 |sed 's/ //' |sed 's/P/p/')"
-   export PYTHONPATH="${HOME}/.pspman/lib/${python_version}/site-packages:${PYTHONPATH}"
-   export PATH="${HOME}/.pspman/bin:${PATH}"
-
-- Understand that `installation scripts` do precisely *the above* for you, in an organized way.
+   pspman -i "https://github.com/pradyparanjpe/pspman.git"
 
 
 UNINSTALL
----------
+=========
 
 Linux
-~~~~~
+-----
 
-.. _git-1:
-
-
-Using bash script
-^^^^^^^^^^^^^^^^^
-
--  Run (Un)Installation script
+- Run pspman `goodbye`
 
 .. code:: sh
 
-   cd "${HOME}/.pspman/src/pspman/install_scripts" && bash uninstall.sh
-
-Using pip
-^^^^^^^^^
-
-.. _pip-1:
+   pspman goodbye
 
 
--  Remove using pip
+- Remove using ``pip``
 
 .. code:: sh
 
    pip uninstall -y pspman
-
-- Remove corresponding .bashrc configuration and ``${HOME}/.pspman`` folder
 
 
 UPDATE
@@ -114,10 +80,9 @@ UPDATE
 Linux
 ~~~~~
 
-Using pspman
-^^^^^^^^^^^^
+If :ref:`recommended` was opted, use me to update myself:
 
-(Use me to update myself): Run a regular update on the folder in which pspman is cloned
+Run a regular update on the folder in which pspman is cloned
 
 .. code:: sh
 
@@ -130,4 +95,4 @@ Using pip
 
 .. code:: sh
 
-    pip install --prefix="${HOME}/.pspman" -U pspman
+    pip install -U pspman

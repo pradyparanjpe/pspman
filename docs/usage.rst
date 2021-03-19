@@ -1,13 +1,9 @@
-SYNOPSIS
---------
-
-.. argparse::
-   :ref: pspman.define.cli
-   :prog: pspman
-
+#####
+USAGE
+#####
 
 Application
------------
+===========
 
 -  Clone and install git projects.
 -  Update existing git projects.
@@ -17,41 +13,60 @@ Application
    -  ``pip --user -U install .`` .
    -  meson/ninja.
    - go install
+   - cmake build, ``make``, ``make install``
 
--  Delete cloned directories [but not installation files]
+-  Delete cloned directories, try deleting installation files.
+   [This may leave scars if the project does not have pre-programmed uninstallation routines]
 
 Recommendation
-~~~~~~~~~~~~~~
+--------------
 
-Create multiple Clone Directories (argument ``-c``) as package groups that update together.
+Create similar/linked projects as GIT-Groups that update together (option ``-p``)
+
+
+SYNOPSIS
+========
+
+.. argparse::
+   :ref: pspman.define.cli
+   :prog: pspman
+
 
 EXAMPLES
---------
+========
 
-Show help
-~~~~~~~~~
+- Show help
 
 .. code:: sh
 
    pspman -h
 
-Update default locations
-~~~~~~~~~~~~~~~~~~~~~~~~
+- Update default location
 
 .. code:: sh
 
    pspman
 
-Clone and install ``git@gitolite.local:foo.git``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Clone and install ``git@gitolite.local:foo.git``'s branch: devel
 
 .. code:: sh
 
-   pspman -i git@gitolite.local/foo.git
+   pspman -i "git@gitolite.local/foo.git___devel"
 
-delete package ``foo`` located in directory ``bar``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Delete package ``foo`` located in GIT-Group ``bar``
 
 .. code:: sh
 
-   pspman -d foo -c bar
+   pspman -d foo -p bar
+
+- List projects in GIT-Group bar
+
+.. code:: sh
+
+   pspman -p bar list
+
+- List known GIT-Groups
+
+.. code:: sh
+
+   pspman list --meta
