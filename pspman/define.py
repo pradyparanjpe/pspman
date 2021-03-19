@@ -267,8 +267,7 @@ def lock(env: InstallEnv, unlock: bool = False):
             os.remove(lockfile)
             return 1
         with open(lockfile, 'r') as lock_fh:
-            print(f"Process with id {lock_fh.read()} is incomplete...",
-                  mark='err')
+            print(f"Process with id {lock_fh.read()} is incomplete...", mark='err')
         print("Either wait for the process to get completed")
         print("OR interrupt the process and execute")
         print(f"pspman -c {os.path.split(env.clone_dir)[0]} unlock",

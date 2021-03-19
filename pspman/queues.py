@@ -306,6 +306,10 @@ class TermQueue(PSPQueue):
                                '.pspman.healthy.yml'), 'a') as db_handle:
             yaml.dump({project.name: project.__dict__}, db_handle)
 
+        with open(os.path.join(self.env.clone_dir,
+                               '.pspman.fail.yml'), 'a') as fail_handle:
+            yaml.dump({project.name: None}, fail_handle)
+
     def on_failure(self, project: GitProject):
         '''
         Child: store GitProject state
