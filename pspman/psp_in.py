@@ -25,6 +25,7 @@ Read configuration
 
 import os
 import typing
+import subprocess
 import shutil
 import yaml
 from .config import MetaConfig
@@ -218,3 +219,13 @@ def init(config: MetaConfig):
         if os.path.isdir(psp_config):
             # Thou Shallt be a file
             shutil.rmtree(psp_config)
+    dep_fail = False
+    for dependency in 'python3', 'pip', 'git' , 'make', 'cmake', 'meson', 'go':
+        avail = shutil.which(dependency)
+        if avail is None:
+            print(f"Dependency not found: {dependency}")
+            dep_fail = True
+    if dep_fail:
+        print("Unless all dependencies are installed, pspman shall fail")
+        return 1
+    return 0

@@ -304,7 +304,6 @@ def add_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject],
         url, branch, inst_argv, sh_env, pull = _parse_inst(inst_input)
         new_project = GitProject(url=url, sh_env=sh_env, inst_argv=inst_argv,
                                  branch=branch, pull=pull)
-        print(repr(new_project), mark='bug')
         if os.path.isfile(os.path.join(env.clone_dir, new_project.name)):
             # name is a file, use .d directory
             print(f"A file named '{new_project}' already exists", mark=3)

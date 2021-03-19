@@ -53,8 +53,14 @@ def call() -> int:
         return 0
 
     if env.call_function == 'init':
-        init(CONFIG)
-        CONFIG.add(GroupDB(path=CONFIG.data_dir, name='default'))
+        err = init(CONFIG)
+        if err:
+            return err
+        default_git_grp = GroupDB(path=CONFIG.data_dir, name='default')
+        CONFIG.add(default_git_grp)
+        CONFIG.store()
+        default_git_grp.mk_structure()
+        print("Close this shell (terminal) and open another session.")
         return 0
 
     if 'default' not in CONFIG.meta_db_dirs:
