@@ -25,9 +25,7 @@ Read configuration
 
 import os
 import typing
-import subprocess
 import shutil
-import yaml
 from .config import MetaConfig
 from .errors import PathNameError
 
@@ -65,10 +63,15 @@ def _gen_sys_bash_text(psp_bash: str) -> str:
         psp_bash: path to config_dir/pspman/bashrc file
 
     '''
+    if 'HOME' in os.environ:
+        home_dir = os.environ['HOME']
+        psp_bash = "${HOME}/" + os.path.relpath(psp_bash, home_dir)
+        # Path relative to home, since this is personal
+        # Such .bashrc can be synced between different users on same machine
     return "\n".join(('', _PSPMAN_MARKERS,
-                           f'if [[ -f "{psp_bash}" ]]; then',
-                           f'    . "{psp_bash}"; fi',
-                           _PSPMAN_MARKERS, ''))
+                      f'if [[ -f "{psp_bash}" ]]; then',
+                      f'    . "{psp_bash}"; fi',
+                      _PSPMAN_MARKERS, ''))
 
 
 def _gen_psp_bash_text(data_path: str) -> str:

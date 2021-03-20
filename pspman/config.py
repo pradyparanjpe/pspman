@@ -62,7 +62,7 @@ def _config_dir(path: str = None) -> str:
         return config_path
     home_dir = os.environ.get('HOME')
     if home_dir is None:
-        # On which wierd operating system is this installed?
+        # On which wierd operating system is this installed!
         config_path = ".pspman"
         os.makedirs(config_path, exist_ok=True)
         return ".pspman"
@@ -71,6 +71,7 @@ def _config_dir(path: str = None) -> str:
     if os.path.isdir(config_dir):
         os.makedirs(config_path, exist_ok=True)
         return config_path
+    # Why don't you have .config!
     config_path = os.path.join(home_dir, '.pspman')
     os.makedirs(config_path, exist_ok=True)
     return config_path
