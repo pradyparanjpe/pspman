@@ -63,7 +63,6 @@ class PSPQueue:
         success_q: push to this queue, if action succeeds
         fail_q: push to this queue, if action fails
         **kwargs:
-            * no-parallel: bool: True if single thread is to be used
             * items: Optional[Dict[str, GitProject]]: initialize with items
             * q_type: type of queue
 
@@ -73,10 +72,7 @@ class PSPQueue:
                  **kwargs):
         self.env = env
         self._running = False
-        if kwargs.get('parallel') is not None:
-            self._parallel = len(os.sched_getaffinity(0))
-        else:
-            self._parallel = 1
+        self._parallel = len(os.sched_getaffinity(0))
         self.upstream_qs: typing.List['PSPQueue'] = []  # type: ignore
         self.downstream_qs = {'success': kwargs.get('success'),
                               'fail': kwargs.get('fail')}
@@ -144,7 +140,15 @@ class PSPQueue:
             return
         self._running = True
         while len(self.queue):
-            with multiprocessing.Pool(self._parallel) as pool:
+            n_workers = min(self._parallel, len(self.queue))
+            if self.env.verbose:
+                print(f'''
+                Spawning {n_workers} worker(s)
+                for {len(self.queue)} projects
+                available processors: {self._parallel}
+                ''',
+                      mark='bug')
+            with multiprocessing.Pool(n_workers) as pool:
                 results: typing.List[typing.Tuple[str, int, int]] = list(
                     pool.map_async(self.action,
                                    ((self.env, project) for
