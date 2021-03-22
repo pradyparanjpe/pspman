@@ -65,11 +65,14 @@ def _gen_sys_bash_text(psp_bash: str) -> str:
     '''
     if 'HOME' in os.environ:
         home_dir = os.environ['HOME']
-        psp_bash = "${HOME}/" + os.path.relpath(psp_bash, home_dir)
         # Path relative to home, since this is personal
         # Such .bashrc can be synced between different users on same machine
+        psp_bash = "${HOME}/" + os.path.relpath(psp_bash, home_dir)
+    shell_check_source = psp_bash.replace("${HOME}/", '')
     return "\n".join(('', _PSPMAN_MARKERS,
+                      f'# shellcheck source="{shell_check_source}"',
                       f'if [[ -f "{psp_bash}" ]]; then',
+                      '    # shellcheck disable=SC1091',
                       f'    . "{psp_bash}"; fi',
                       _PSPMAN_MARKERS, ''))
 
