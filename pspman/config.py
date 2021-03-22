@@ -260,12 +260,14 @@ class MetaConfig():
         meta_db_dirs: registry of all GroupDBs
         config_dir: pspman configuration directory
         data_dir: pspman default data directory
+        opt_in: opted installation methods [pip, make, cmake, meson, go]
 
     '''
     def __init__(self, **kwargs):
         self.meta_db_dirs: typing.Dict[str, GroupDB] = {}
         self.config_dir = _config_dir(kwargs.get('config_dir'))
         self.data_dir = _data_dir(kwargs.get('data_dir'))
+        self.opt_in: typing.List[str] = []
         for group in kwargs.get('meta_db_dirs', {}).values():
             self.add(group)
 
@@ -356,9 +358,12 @@ def read_config(path: str = None) -> MetaConfig:
         return config
     init_msg = [
         'PSPMan is not initialized',
-
-        "To initialize: run without ' #':",
-        "\033[0;97;40m" + "pspman init" + "\033[0m:"
+        '',
+        "To initialize: run without '# ':",
+        "# \033[0;97;40mpspman init\033[0m:",
+        '',
+        "Check help for omitting some installation methods: run without '# ':",
+        "# \033[0;97;40mpspman init -g033[0m:",
     ]
     print("\n    ".join(init_msg))
     return config

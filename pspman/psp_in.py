@@ -203,7 +203,7 @@ def de_init(config: MetaConfig, sys_bash: str = None):
     print('\n    '.join(instructions))
 
 
-def init(config: MetaConfig):
+def init(config: MetaConfig, opt_in: typing.List[str] = None):
     '''
     Initialize environment, data structure for pspman
 
@@ -212,6 +212,7 @@ def init(config: MetaConfig):
 
 '''
 
+    opt_in = opt_in or []
     psp_config = os.path.join(config.config_dir, 'config.yml')
     psp_bash = os.path.join(config.config_dir, 'bashrc')
     mod_bash(psp_bash)
@@ -226,7 +227,8 @@ def init(config: MetaConfig):
             # Thou Shallt be a file
             shutil.rmtree(psp_config)
     dep_fail = False
-    for dependency in 'python3', 'pip', 'git' , 'make', 'cmake', 'meson', 'go':
+
+    for dependency in 'python3', 'git', 'pip', *opt_in:
         avail = shutil.which(dependency)
         if avail is None:
             print(f"Dependency not found: {dependency}")
