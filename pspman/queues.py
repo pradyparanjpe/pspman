@@ -43,7 +43,8 @@ from .tag import TAG_ACTION, RET_CODE
 
 class PSPQueue:
     '''
-    Base FIFO Queue object to push and retrieve tasks
+    Base FIBO Queue object to push and retrieve tasks.
+    File In Batch Out.
 
     Attributes:
         env: installation context
@@ -71,7 +72,6 @@ class PSPQueue:
                  fail_q: 'PSPQueue' = None,  # type: ignore
                  **kwargs):
         self.env = env
-        self._running = False
         self._parallel = len(os.sched_getaffinity(0))
         self.upstream_qs: typing.List['PSPQueue'] = []  # type: ignore
         self.downstream_qs = {'success': kwargs.get('success'),
@@ -86,10 +86,8 @@ class PSPQueue:
             self.queue = kwargs['items'].copy()
         self.q_type: str = kwargs.get('q_type', 'base')
         self._server, self._client = self._create_sockets()
-        self._client.settimeout(10)
-        self._server.settimeout(10)
-        self.pid = self.start()
         self.closed = False
+        self.pid = self.start()
 
     def _create_sockets(self) -> typing.Tuple[socket.socket, socket.socket]:
         '''
@@ -116,13 +114,11 @@ class PSPQueue:
             project: project to queue
 
         '''
-        if project is not None:
-            # Not a Zombie project
-            if not self._client._closed:  # type: ignore
-                # send this to child
-                self.copy_to_server(project)
-            else:
-                raise ClosedQueueError(self)
+        if not self._client._closed:  # type: ignore
+            # send this to child
+            self.copy_to_server(project)
+        else:
+            raise ClosedQueueError(self)
 
     def __len__(self) -> int:
         '''
@@ -136,19 +132,16 @@ class PSPQueue:
         Child: Execute threads that run ``action`` on all items in the queue
 
         '''
-        if not len(self.queue):
+        if not len(self):
             return
-        self._running = True
-        while len(self.queue):
-            n_workers = min(self._parallel, len(self.queue))
+        while len(self):
+            n_wrkrs = min(self._parallel, len(self))
             if self.env.verbose:
-                print(f'''
-                Spawning {n_workers} worker(s)
-                for {len(self.queue)} projects
-                available processors: {self._parallel}
-                ''',
-                      mark='bug')
-            with multiprocessing.Pool(n_workers) as pool:
+                print(f'Spawned {n_wrkrs} {self.q_type} worker(s)', mark='act')
+                print(f'For projects:', mark='act')
+                for p_name in self.queue:
+                    print(p_name, mark='list')
+            with multiprocessing.Pool(n_wrkrs) as pool:
                 results: typing.List[typing.Tuple[str, int, int]] = list(
                     pool.map_async(self.action,
                                    ((self.env, project) for
@@ -161,7 +154,8 @@ class PSPQueue:
                     self.on_success(project)
                 elif res[-1] == RET_CODE['fail']:
                     self.on_failure(project)
-        self._running = False
+            if self.env.verbose:
+                print(f"Processed {n_wrkrs} {self.q_type} actions", mark=2)
 
     def on_success(self, project: GitProject):
         '''
@@ -206,18 +200,13 @@ class PSPQueue:
             # child server
             pipe, _ = self._server.accept()
             while not self._server._closed:  # type: ignore
-                # socket is not closed
-                if self._running:
-                    # Wait for job to complete
-                    print('Server child is running...', mark='bug')
-                    time.sleep(10)
-                else:
-                    # Action is not running
-                    self.handle_conn(pipe)
-                    # Batch run, ready to receive next signal
-            else:
-                # final pass
+                while len(self) < self._parallel:
+                    close = self.copy_from_client(pipe)
+                    if close and not self._server._closed:  # type: ignore
+                        self._server.close()
+                        break
                 self.run_batch()
+            else:
                 if self.downstream_qs['success'] is not None:
                     self.downstream_qs['success'].done(self)
                 if self.downstream_qs['fail'] is not None:
@@ -228,15 +217,6 @@ class PSPQueue:
             pass
         return pid
 
-    def handle_conn(self, pipe: socket.socket) -> None:
-        '''
-        Child: handle each parent connection
-        '''
-        close = self.copy_from_client(pipe)
-        self.run_batch()
-        if close and not self._server._closed:  # type: ignore
-            self._server.close()
-
     def copy_from_client(self, pipe: socket.socket) -> bool:
         '''
         Child: copy parent's queue
@@ -245,18 +225,14 @@ class PSPQueue:
             ``True`` if 'close' instruction is received
 
         '''
-        try:
-            size_in_bytes = pipe.recv(64)
-            chunk = int.from_bytes(bytes=size_in_bytes, byteorder='big')
-            if chunk == 0:
-                # input closed
-                return True
-            self.queue = {name: GitProject(data=project_data)
-                          for name, project_data in
-                          json.loads(pipe.recv(chunk).decode('utf-8')).items()}
-        except socket.timeout:
-            print('Client parent did\'t respond...', mark='bug')
-            time.sleep(10)
+        size_in_bytes = pipe.recv(64)
+        chunk = int.from_bytes(bytes=size_in_bytes, byteorder='big')
+        if chunk == 0:
+            # input closed
+            return True
+        for name, data in json.loads(
+                pipe.recv(chunk).decode('utf-8')).items():
+            self.queue[name] = GitProject(data=data)
         return False
 
     def copy_to_server(self, project: GitProject = None):
@@ -267,13 +243,10 @@ class PSPQueue:
         if project is None:
             return
         self.queue[project.name] = project
-        try:
-            json_t = json.dumps(self.queue, cls=GitProjEncoder).encode('utf-8')
-            self._client.send(len(json_t).to_bytes(length=64, byteorder='big'))
-            self._client.send(json_t)
-            self.queue = {}
-        except socket.timeout:
-            print('Server child did\'t respond...', mark='info')
+        json_t = json.dumps(self.queue, cls=GitProjEncoder).encode('utf-8')
+        self._client.send(len(json_t).to_bytes(length=64, byteorder='big'))
+        self._client.send(json_t)
+        self.queue = {}
 
     def __repr__(self) ->str:
         '''

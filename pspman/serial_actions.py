@@ -339,6 +339,8 @@ def update_projects(env: InstallEnv,
     queues['pull'] = PullQueue(env=env, success=queues['install'],
                                fail=queues['fail'])
     for project in git_projects.values():
+        if env.verbose:
+            print(f'Pushing {project} to pull-queue')
         queues['pull'].add(project)
     queues['pull'].done()
 
