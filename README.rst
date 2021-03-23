@@ -3,15 +3,16 @@ PSPMAN
 
 **PS**\ eudo **P**\ ackage **Man**\ ager (pspman) - a package manager aid
 
-Documentation
-=============
-
-|Documentation Status|
-
 Source Code Repository
 ======================
 
 |source| `Repository <https://github.com/pradyparanjpe/pspman.git>`__
+
+
+Badges
+======
+
+|Documentation Status|  |PyPi Version|  |PyPi Format|  |PyPi Pyversion|
 
 
 DESCRIPTION
@@ -82,3 +83,15 @@ May mess up root file system. Do not use as ROOT.
    :target: https://pspman.readthedocs.io/?badge=latest
 .. |source| image:: https://github.githubassets.com/favicons/favicon.png
    :target: https://github.com/pradyparanjpe/pspman.git
+
+.. |PyPi Version| image:: https://img.shields.io/pypi/v/pspman
+   :target: https://pypi.org/project/pspman/
+   :alt: PyPI - version
+
+.. |PyPi Format| image:: https://img.shields.io/pypi/format/pspman
+   :target: https://pypi.org/project/pspman/
+   :alt: PyPI - format
+
+.. |PyPi Pyversion| image:: https://img.shields.io/pypi/pyversions/pspman
+   :target: https://pypi.org/project/pspman/
+   :alt: PyPi - pyversion
