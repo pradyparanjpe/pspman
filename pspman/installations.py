@@ -26,6 +26,7 @@ Automated installations
 import os
 import typing
 import shutil
+from . import CONFIG
 from .shell import process_comm
 
 
@@ -62,6 +63,8 @@ def install_make(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if error/failure during installation, else, ``True``
 
     '''
+    if 'make' not in CONFIG.opt_in:
+        return False
     incl = os.path.join(prefix, 'include')
     libs = os.path.join(prefix, 'lib')
     include: typing.Union[typing.Tuple[str, str], typing.Tuple] = ()
@@ -102,6 +105,8 @@ def install_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if error/failure during installation, else, ``True``
 
     '''
+    if 'cmake' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     build_dir = os.path.join(prefix, 'temp_build', 'cmake')
     incl = os.path.join(prefix, 'include')
@@ -151,6 +156,8 @@ def install_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if error/failure during installation, else, ``True``
 
     '''
+    if 'pip' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     requirements_file_path = os.path.join(code_path, 'requirements.txt')
     if os.path.exists(requirements_file_path):
@@ -178,6 +185,8 @@ def install_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
     Returns:
         ``False`` if error/failure during installation, else, ``True``
     '''
+    if 'meson' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     subproject_dir = os.path.join(code_path, 'subprojects')
     os.makedirs(subproject_dir, exist_ok=True)
@@ -215,6 +224,8 @@ def install_go(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if error/failure during installation, else, ``True``
 
     '''
+    if 'go' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     mod_env['GOROOT'] = prefix
     mod_env['GOPATH'] = prefix

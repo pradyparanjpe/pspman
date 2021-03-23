@@ -26,6 +26,7 @@ Automated Uninstallations
 import os
 import typing
 import shutil
+from . import CONFIG
 from .shell import process_comm
 
 
@@ -62,6 +63,8 @@ def remove_make(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if source-code can't be removed, else, ``True``
 
     '''
+    if 'make' not in CONFIG.opt_in:
+        return False
     incl = os.path.join(prefix, 'include')
     libs = os.path.join(prefix, 'lib')
     include: typing.Union[typing.Tuple[str, str], typing.Tuple] = ()
@@ -93,6 +96,8 @@ def remove_cmake(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if source-code can't be removed, else, ``True``
 
     '''
+    if 'cmake' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     build_dir = os.path.join(prefix, 'temp_build', 'cmake')
     incl = os.path.join(prefix, 'include')
@@ -138,6 +143,8 @@ def remove_pip(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False`` if source-code can't be removed, else, ``True``
 
     '''
+    if 'pip' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     name = os.path.split(code_path)[-1]
     return bool(process_comm('python3', '-m', 'pip', 'uninstall', '-y', name,
@@ -158,6 +165,8 @@ def remove_meson(code_path: str, prefix=str, argv: typing.List[str] = None,
     Returns:
         ``False`` if source-code can't be removed, else, ``True``
     '''
+    if 'meson' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     subproject_dir = os.path.join(code_path, 'subprojects')
     os.makedirs(subproject_dir, exist_ok=True)
@@ -193,5 +202,7 @@ def remove_go(code_path: str, prefix=str, argv: typing.List[str] = None,
         ``False``
 
     '''
+    if 'go' not in CONFIG.opt_in:
+        return False
     argv, mod_env = prep_arg_env(argv, env)
     return False

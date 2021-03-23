@@ -46,16 +46,21 @@ def call() -> int:
         Error code to system
 
     '''
-    env = ENV.update(cli_opts(CONFIG))
+    cli_kwargs = cli_opts(CONFIG)
+    call_function = cli_kwargs.get('call_function')
 
-    if env.call_function == 'goodbye':
+    if call_function == 'goodbye':
         de_init(CONFIG)
         return 0
 
-    if env.call_function == 'init':
-        err = init(CONFIG)
+    if call_function == 'init':
+        opt_in = [i_t for i_t in ('make', 'cmake', 'meson', 'go')
+                   if not cli_kwargs.get(i_t, False)]
+        err = init(CONFIG, out_out=opt_in)
         if err:
             return err
+        # Build meta
+        CONFIG.opt_in = opt_in
         default_git_grp = GroupDB(path=CONFIG.data_dir, name='default')
         CONFIG.add(default_git_grp)
         CONFIG.store()
@@ -63,22 +68,24 @@ def call() -> int:
         print("Close this shell (terminal) and open another session.")
         return 0
 
+    if call_function == 'version':
+        print(__version__, mark='info', pref='VERSION')
+        return 0
+
     if 'default' not in CONFIG.meta_db_dirs:
         # not initiated
         return 1
 
-    if env.call_function == 'version':
-        print(__version__, mark='info', pref='VERSION')
-        return 0
+    env = ENV.update(cli_kwargs)
 
-    if env.call_function == 'meta':
+    if call_function == 'meta':
         return print_prefixes(env=env)
 
     env_err = prepare_env(env)
     if env_err != 0:
         return env_err
 
-    lock_state = lock(env=env, unlock=(env.call_function == 'unlock'))
+    lock_state = lock(env=env, unlock=(call_function == 'unlock'))
     if lock_state != 0:
         return lock_state - 1
 

@@ -67,16 +67,28 @@ def cli(config: MetaConfig = None) -> argparse.ArgumentParser:
                                      help='display version and exit')
     unlock = sub_parsers.add_parser(name='unlock', aliases=[],
                                     help='Unlock C_DIR and exit')
+
     list_gits = sub_parsers.add_parser(
         name='list', aliases=['info'],
         help='display list of cloned repositories and exit'
     )
     list_gits.add_argument('--meta', '-m', action='store_true',
                            help='List known C_DIR(s)')
+
     init = sub_parsers.add_parser(name='init', aliases=['initialize'],
                                   help='initialize pspman')
+    init.add_argument('--make', '-m', action='store_true',
+                      help='initialize without make (also without cmake)')
+    init.add_argument('--cmake', '-c', action='store_true',
+                      help='initialize without cmake')
+    init.add_argument('--meson', '-n', action='store_true',
+                      help='initialize without meson/ninja')
+    init.add_argument('--go', '-g', action='store_true',
+                      help='initialize without go')
+
     goodbye = sub_parsers.add_parser(name='goodbye', aliases=['de-initialize'],
                                      help='Cleanup before uninstalling pspman')
+
     init.set_defaults(call_function='init')
     goodbye.set_defaults(call_function='goodbye')
     version.set_defaults(call_function='version')
@@ -143,6 +155,9 @@ def cli_opts(config: MetaConfig = None) -> typing.Dict[str, typing.Any]:
         setattr(args, 'call_function', 'version')
     if args.init:
         setattr(args, 'call_function', 'init')
+    setattr(args, 'cmake', getattr(args, 'cmake', False) or
+            getattr(args, 'make', False)
+            )
     return vars(args)
 
 

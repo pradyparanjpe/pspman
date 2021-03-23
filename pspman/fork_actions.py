@@ -41,7 +41,7 @@ All `actions` accept same set of args and return same type of object
 import os
 import typing
 import shutil
-from . import print
+from . import print, CONFIG
 from .shell import git_comm
 from .classes import InstallEnv, GitProject
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION, RET_CODE
@@ -74,7 +74,7 @@ def delete(
     pspman -i {project.url}
     ''', mark='delete' )
     inst_tag = project.tag & 0xf0
-    if inst_tag:
+    if inst_tag and TAG_ACTION[inst_tag] in CONFIG.opt_in:
         # Attempt uninstallation
         if env.verbose:
             print( f'''
@@ -96,6 +96,9 @@ def delete(
                       mark='fdelete')
                 print(f'Proceeding to delete the source code anyway...',
                       mark='info')
+    else:
+        if env.verbose and inst_tag:
+            print(f'PSPMan was initialized only with {CONFIG.opt_in}')
 
     # Erase source code
     if env.verbose:
@@ -213,9 +216,11 @@ def install(
                   mark='install')
         return project.name, project.tag & (0xff - ACTION_TAG['install']),\
             RET_CODE['pass']
-        if env.verbose:
-            print(f'FAILED Installing (update for) project {project.name}',
-                  mark='finstall')
+    if env.verbose:
+        print(f'FAILED Installing (update for) project {project.name}',
+              mark='finstall')
+        if TAG_ACTION[project.tag&0xf0] not in CONFIG.opt_in:
+            print(f'PSPMan was initialized only with {CONFIG.opt_in}')
     return project.name, project.tag, RET_CODE['fail']
 
 
