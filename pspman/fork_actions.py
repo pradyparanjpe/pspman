@@ -2,7 +2,7 @@
 # -*- coding:utf-8; mode:python -*-
 #
 # Copyright 2020 Pradyumna Paranjape
-# This le is part of pspman. #
+# This file is part of pspman. #
 # pspman is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or

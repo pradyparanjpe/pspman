@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ##################################
-Welcome to pspman's documentation!
+Welcome to PSPMan's documentation!
 ##################################
 
 .. toctree::

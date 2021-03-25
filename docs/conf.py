@@ -18,7 +18,7 @@ import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
-project = 'pspman'
+project = 'PSPMan'
 copyright = '2021, Pradyumna Paranjape'
 author = 'Pradyumna Paranjape'
 

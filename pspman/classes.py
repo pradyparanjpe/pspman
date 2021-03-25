@@ -2,7 +2,7 @@
 # -*- coding:utf-8; mode:python -*-
 #
 # Copyright 2020 Pradyumna Paranjape
-# This le is part of pspman.
+# This file is part of pspman.
 #
 # pspman is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -32,7 +32,7 @@ import yaml
 from psprint import print
 from .config import MetaConfig
 from .tag import ACTION_TAG
-from .errors import TagError, GitURLError
+from .errors import GitURLError
 
 
 class InstallEnv():

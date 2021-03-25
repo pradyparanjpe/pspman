@@ -1,7 +1,8 @@
+******
 PSPMAN
-======
+******
 
-**PS**\ eudo **P**\ ackage **Man**\ ager (pspman) - a package manager aid
+**PS**\ eudo **P**\ ackage **Man**\ ager (PSPMan) - a package manager aid
 
 Source Code Repository
 ======================
@@ -37,7 +38,8 @@ Currently supports installation of:
     - go
     - `pull-only` (don't install)
 
-pull-requests are welcome
+May be extended for other methods using instruction file. (see documentation for Extensions)
+Pull requests are welcome.
 
 Remember:
 ---------

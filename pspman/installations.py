@@ -2,7 +2,7 @@
 # -*- coding:utf-8; mode:python -*-
 #
 # Copyright 2020 Pradyumna Paranjape
-# This le is part of pspman.
+# This file is part of pspman.
 #
 # pspman is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -56,8 +56,8 @@ class Instruct():
         exdicate: list of file/dirnames that prohibit the method
         requires: list of required dependencies to run the method
         env: dict of environment variables during (un)installation
-        install: *ordered* list of installation ``step``s for installation
-        uninstall: *ordered* list of uninstallation ``step``s for installation
+        install: `ordered` list of ``steps`` for installation
+        uninstall: `ordered` list of ``steps`` for uninstallation
 
             * steps: strings that may start with a caret sign (^)
               ^ indicates that this step is allowed to fail
@@ -98,7 +98,7 @@ class Instruct():
             instruct: data out from yaml load
 
         Raises:
-            InstallInstructError: bad format for install instructions
+            InstructFmtError: bad format for install instructions
             MissingInstructError: essential instruction is missing
         '''
         self.indicate = instruct.get('indicate') or []
@@ -156,8 +156,8 @@ class DefInstruct():
         instruct_file: yaml file describing instructions
 
     Raises:
-        MissingInstruction Error: missing essential instruction
-        InstallInstructError: Bad format of ``instruct_file``
+        MissingInstructError: missing essential instruction
+        InstructFmtError: Bad format of ``instruct_file``
 
     '''
     def __init__(self, instruct_file: Path):
