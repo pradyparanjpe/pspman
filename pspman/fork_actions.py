@@ -42,7 +42,7 @@ import typing
 import shutil
 from pathlib import Path
 from . import print, CONFIG
-from .shell import git_comm
+from .shell import git_clean, git_pull, git_clone
 from .classes import InstallEnv, GitProject
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION, RET_CODE
 from .installations import INST_METHODS, run_install
@@ -134,9 +134,9 @@ def clone(
     gitkwargs: typing.Dict[str, typing.Optional[str]] = {}
     if project.branch is not None:
         gitkwargs['branch'] = project.branch
-    success = git_comm(clone_dir=Path(env.clone_dir).joinpath(project.name),
-                       motive=(project.url, project.name), gitkwargs=gitkwargs)
-    if success is None:
+    ret = git_clone(clone_dir=Path(env.clone_dir).joinpath(project.name),
+                    url=project.url, name=project.name, gitkwargs=gitkwargs)
+    if ret is None:
         # STDERR thrown
         print(f'Failed to clone source of {project.name}', mark='fclone')
         return (project.name, project.tag, RET_CODE['fail'])
@@ -162,8 +162,9 @@ def update(
 
     '''
     env, project = args
-    g_pull = git_comm(clone_dir=Path(env.clone_dir).joinpath(project.name),
-                      motive='pull')
+    code_path = Path(env.clone_dir).joinpath(project.name)
+    git_clean(code_path)
+    g_pull = git_pull(clone_dir=code_path)
     if g_pull is not None:
         # STDERR from pull was blank
         tag = project.tag & (0xff - ACTION_TAG['pull'])
@@ -219,6 +220,7 @@ def install(
             if env.verbose:
                 print(f'Installed (update for) project {project.name}.',
                       mark='install')
+            git_clean(code_path)
             return project.name, project.tag & (0xff - ACTION_TAG['install']),\
                 RET_CODE['pass']
     if env.verbose:
@@ -226,6 +228,7 @@ def install(
               mark='finstall')
         if TAG_ACTION[project.tag&0xf0] not in CONFIG.opt_in:
             print(f'PSPMan was initialized only with {CONFIG.opt_in}')
+    git_clean(code_path)
     return project.name, project.tag, RET_CODE['fail']
 
 

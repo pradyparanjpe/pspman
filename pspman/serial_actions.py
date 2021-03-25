@@ -29,7 +29,7 @@ import re
 import yaml
 from .config import MetaConfig
 from . import print, CONFIG
-from .shell import git_comm
+from .shell import git_list
 from .classes import InstallEnv, GitProject
 from .queues import (PSPQueue, PullQueue, FailQueue, CloneQueue,
                      SuccessQueue, DeleteQueue, InstallQueue)
@@ -107,12 +107,9 @@ def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
             continue
         if name in git_projects:
             continue
-        g_url = git_comm(clone_dir=leaf, motive='list')
-        if g_url is None:
-            # failed
+        url = git_list(clone_dir=leaf)
+        if url is None:
             continue
-        fetch: typing.List[str] = re.findall(r"^.*fetch.*", g_url)
-        url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
         discovered_projects[name] = GitProject(url=url, name=name)
     git_projects.update({**discovered_projects, **healthy_db})
 

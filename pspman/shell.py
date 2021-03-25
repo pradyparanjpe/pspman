@@ -27,6 +27,7 @@ import os
 import typing
 import subprocess
 from pathlib import Path
+import re
 from .errors import CommandError
 from . import print
 
@@ -80,24 +81,68 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
     return stdout
 
 
-def git_comm(
-        clone_dir: Path,
-        motive: typing.Union[str, typing.Tuple[str, str]] = None,
-        gitkwargs: typing.Dict[str, typing.Optional[str]] = None,
-        prockwargs: typing.Dict[str, str] = None) -> typing.Optional[str]:
+def git_comm(cmd: typing.List[str], g_name: str = 'process', gitkwargs:
+             typing.Dict[str, typing.Optional[str]] = None, prockwargs:
+             typing.Dict[str, typing.Any] = None) -> typing.Optional[str]:
     '''
-    Perform a git action
+    Process git-specific and subprocess-specific kwargs and run git cmd
+
+    Args:
+        cmd: command list to run
+        gitkwargs: parsed from to --key[=val] and passed to git command
+        prockwargs: passed to ``process_comm``
+
+    Returns:
+        Output from process_comm
+
+    '''
+
+    # process kwargs
+    prockwargs = prockwargs or {}
+    gitkwargs = gitkwargs or {}
+
+    # Parse gitkwargs into arguments
+    for key, val in gitkwargs.items():
+        key_flag = "-" + str(key) if len(str(key)) < 2 else "--" + str(key)
+        cmd.append(key_flag)
+        if val is not None:
+            cmd.append(str(val))
+    return process_comm(*cmd, p_name=f'git {g_name}', timeout=None,
+                        fail_handle='report', **prockwargs)
+
+
+def git_clean(clone_dir: Path, gitkwargs:
+              typing.Dict[str, typing.Optional[str]] = None,
+              prockwargs: typing.Dict[str, typing.Any]
+              = None) -> typing.Optional[str]:
+    '''
+    Reset and clean git worktree
 
     Args:
         clone_dir: directory in which, project is (to be) cloned
-        motive: git action to perform
-            * list: list git projects (default)
-            * pull: pull and update
-            * (url, name): clone a new project identified by (url, name)
 
-                * url: remote url to clone
-                * name: name (path) of project
+    Returns:
+        Output from process_comm
 
+    '''
+    reset = ['git', '-C', str(clone_dir), 'reset', '--hard', ':/']
+    clean = ['git', '-C', str(clone_dir), 'clean', '-f', ':/']
+    success = bool(git_comm(reset, g_name='reset', gitkwargs=gitkwargs,
+                            prockwargs=prockwargs))
+    if not success:
+        return None
+    return git_comm(clean, g_name='clean', gitkwargs=gitkwargs,
+                    prockwargs=prockwargs)
+
+
+def git_list(clone_dir: Path, gitkwargs: typing.Dict[str, typing.Optional[str]]
+             = None, prockwargs: typing.Dict[str, typing.Any]
+             = None) -> typing.Optional[str]:
+    '''
+    Generate remote url of git
+
+    Args:
+        clone_dir: directory in which, project is (to be) cloned
         gitkwargs: parsed from to --key[=val] and passed to git command
         prockwargs: passed to ``process_comm``
 
@@ -106,34 +151,56 @@ def git_comm(
 
     '''
     # Default $0 command
-    cmd: typing.List[str] = ['git']
+    cmd: typing.List[str] = ['git', "-C", str(clone_dir), 'remote', "-v"]
+    remote = git_comm(cmd, g_name='list',
+                    gitkwargs=gitkwargs, prockwargs=prockwargs)
+    if remote is None:
+        # failed
+        return None
+    fetch: typing.List[str] = re.findall(r"^.*fetch.*", remote)
+    url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
+    return url
 
-    # process kwargs
-    if prockwargs is None:
-        prockwargs = {}
+def git_pull(clone_dir: Path, gitkwargs: typing.Dict[str, typing.Optional[str]]
+             = None, prockwargs: typing.Dict[str, typing.Any]
+             = None) -> typing.Optional[str]:
+    '''
+    Perform a git action
 
-    if gitkwargs is None:
-        gitkwargs = {}
+    Args:
+        clone_dir: directory in which, project is (to be) cloned
+        gitkwargs: parsed from to --key[=val] and passed to git command
+        prockwargs: passed to ``process_comm``
 
-    if isinstance(motive, str):
-        if motive == 'pull':
-            cmd.extend(('-C', str(clone_dir), 'pull', '--recurse-submodules'))
-        else:
-            cmd.extend(("-C", str(clone_dir), 'remote', "-v"))
-    else:
-        if not isinstance(motive, (tuple, list)) or len(motive) != 2:
-            return None
-        url, name = motive
-        if not(isinstance(url, str) and isinstance(name, str)):
-            return None
-        cmd.extend(('-C', str(clone_dir.parent), 'clone', url, name))
+    Returns:
+        Output from process_comm
 
-    # Parse gitkwargs into arguments
-    for key, val in gitkwargs.items():
-        key_flag = "-" + str(key) if len(str(key)) < 2 else "--" + str(key)
-        cmd.append(key_flag)
-        if val is not None:
-            cmd.append(str(val))
+    '''
+    # Default $0 command
+    cmd: typing.List[str] = ['git', '-C', str(clone_dir),
+                             'pull', '--recurse-submodules']
+    return git_comm(cmd, g_name='pull',
+                    gitkwargs=gitkwargs, prockwargs=prockwargs)
 
-    return process_comm(*cmd, p_name=f'git {motive}', timeout=None,
-                        fail_handle='report', **prockwargs)
+def git_clone(clone_dir: Path, url: str, name: str, gitkwargs:
+              typing.Dict[str, typing.Optional[str]] = None, prockwargs:
+              typing.Dict[str, typing.Any] = None) -> typing.Optional[str]:
+    '''
+    Perform a git action
+
+    Args:
+        clone_dir: directory in which, project is (to be) cloned
+        url: remote url to clone
+        name: name (path) of project
+        gitkwargs: parsed from to --key[=val] and passed to git command
+        prockwargs: passed to ``process_comm``
+
+    Returns:
+        Output from process_comm
+
+    '''
+    # Default $0 command
+    cmd: typing.List[str] = ['git', '-C', str(clone_dir.parent),
+                             'clone', url, name]
+    return git_comm(cmd, g_name='clone',
+                    gitkwargs=gitkwargs, prockwargs=prockwargs)

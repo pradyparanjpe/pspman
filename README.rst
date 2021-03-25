@@ -30,6 +30,7 @@ Packages from Git Repositories.
 Currently supports installation of:
 -----------------------------------
     - python (pip)
+    - make (configure, make)
     - make (Makefile)
     - cmake
     - meson (ninja)
