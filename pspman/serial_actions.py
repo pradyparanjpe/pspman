@@ -40,8 +40,8 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
     Find database file (yml) and load its contents
 
     Args:
-        env: installation context
         fname: name of database file to load
+        env: installation context
 
     Returns:
         registered gitprojects
@@ -51,14 +51,15 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
     # The last entry is safe_loaded by yml parser
     # DELETE registers project name as ``None``
 
-    db_path = os.path.join(env.clone_dir, fname)
+    db_path = env.clone_dir.joinpath(fname)
+    ext = db_path.suffix
     git_projects: typing.Dict[str, GitProject]= {}
-    if not os.path.isfile(db_path):
-        if not os.path.isfile(db_path + '.bak'):
+    if not db_path.is_file():
+        if not db_path.with_suffix(f'.{ext}.bak').is_file():
             # nothing found
             return git_projects
         # backup exists
-        with open(db_path + '.bak', 'r') as db_handle:
+        with open(db_path.with_suffix(f'.{ext}.bak'), 'r') as db_handle:
              d_base = yaml.load(db_handle, Loader=yaml.Loader)
     else:
         # database file does exist
@@ -67,7 +68,7 @@ def load_db(env: InstallEnv, fname: str) -> typing.Dict[str, GitProject]:
 
         # Copy a backup
         # Older backup (if it exists) is erased
-        os.rename(db_path, db_path + '.bak')
+        db_path.replace(db_path.with_suffix(f'.{ext}.bak'))
 
     if d_base is None:
         return git_projects
@@ -98,32 +99,31 @@ def find_gits(env: InstallEnv, git_projects: typing.Dict[str, GitProject]
     discovered_projects: typing.Dict[str, GitProject] = {}
     healthy_db = load_db(env=env, fname=f'.pspman.healthy.yml')
     fail_db = load_db(env=env, fname=f'.pspman.fail.yml')
-    for leaf in os.listdir(env.clone_dir):
-        if not os.path.isdir(os.path.join(env.clone_dir, leaf)):
+    for leaf in env.clone_dir.iterdir():
+        name = leaf.name
+        if not leaf.is_dir():
             continue
-        if not os.path.isdir(os.path.join(env.clone_dir, leaf, '.git')):
+        if not leaf.joinpath('.git').is_dir():
             continue
-        if leaf in git_projects:
+        if name in git_projects:
             continue
-        pkg_path = os.path.join(env.clone_dir, leaf)
-        g_url = git_comm(clone_dir=pkg_path, motive='list')
+        g_url = git_comm(clone_dir=leaf, motive='list')
         if g_url is None:
             # failed
             continue
         fetch: typing.List[str] = re.findall(r"^.*fetch.*", g_url)
         url = fetch[0].split(' ')[-2].split("\t")[-1].rstrip('/')
-        discovered_projects[leaf] = GitProject(url=url, name=leaf)
-        discovered_projects[leaf].type_install(env=env)
+        discovered_projects[name] = GitProject(url=url, name=name)
     git_projects.update({**discovered_projects, **healthy_db})
 
     # Leave a memory of read database
-    with open(os.path.join(env.clone_dir,
-                           '.pspman.healthy.yml'), 'w') as mem_handle:
+    with open(env.clone_dir.joinpath('.pspman.healthy.yml'),
+              'w') as mem_handle:
         for name, project in git_projects.items():
             if project is not None:
                 yaml.dump({name: project.__dict__}, mem_handle)
-    with open(os.path.join(env.clone_dir,
-                           '.pspman.fail.yml'), 'w') as mem_handle:
+    with open(env.clone_dir.joinpath('.pspman.fail.yml'),
+              'w') as mem_handle:
         for name, project in fail_db.items():
             if project is not None:
                 yaml.dump({name: project.__dict__}, mem_handle)
@@ -181,7 +181,7 @@ def print_prefixes(env: InstallEnv, config: MetaConfig = None):
         if env.verbose:
             print(group, mark='list')
         else:
-            print(group.name, group.path, mark='list')
+            print(group.name, group.grp_path, mark='list')
     return 0
 
 
@@ -225,8 +225,8 @@ def del_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject],
         if project_name not in git_projects:
             print(f"Couldn't find {project_name} in {env.clone_dir}", mark=3)
             print('Ignoring...', mark=0)
-            with open(os.path.join(env.clone_dir,
-                                   '.pspman.fail.yml'), 'a') as fail_handle:
+            with open(env.clone_dir.joinpath('.pspman.fail.yml'),
+                      'a') as fail_handle:
                 yaml.dump({project_name: None}, fail_handle)
             continue
         project = git_projects[project_name]
@@ -304,7 +304,7 @@ def add_projects(env: InstallEnv, git_projects: typing.Dict[str, GitProject],
         url, branch, inst_argv, sh_env, pull = _parse_inst(inst_input)
         new_project = GitProject(url=url, sh_env=sh_env, inst_argv=inst_argv,
                                  branch=branch, pull=pull)
-        if os.path.isfile(os.path.join(env.clone_dir, new_project.name)):
+        if env.clone_dir.joinpath(new_project.name).is_file():
             # name is a file, use .d directory
             print(f"A file named '{new_project}' already exists", mark=3)
             new_project.name += '.d'

@@ -14,6 +14,7 @@ Welcome to pspman's documentation!
    README
    name
    INSTALL
+   configure
    usage
    source-code-doc
 

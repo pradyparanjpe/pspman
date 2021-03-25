@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8; mode:python -*-
+# -*- coding:utf-8; mode:yaml -*-
 #
 # Copyright 2020 Pradyumna Paranjape
 # This le is part of pspman.
@@ -17,38 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
-'''
-PSPMAN: **PS**\ eudo **P**\ ackage **Man**\ ager
 
-'''
-
-
-# Globally defined environment configuration
-from pathlib import Path
-from psprint import init_print
-from .classes import InstallEnv
-from .config import read_config
-
-
-print = init_print(Path(__file__).resolve()
-                   .parent.joinpath(".psprintrc.yml")).psprint
-'''
-Customized psprint function
-
-'''
-
-
-# ConfigBase
-CONFIG = read_config()
-'''
-Meta data information about C_DIR(s), configuration directory, etc
-'''
-
-# set configurations
-ENV = InstallEnv(CONFIG)
-'''
-Standard installation context
-'''
-
-
-__version__ = '1!1.2.0'
+indicate:
+- setup.py
+- setup.cfg
+requires:
+- pip
+- python3
+env: {}
+install:
+- ^python3 -m pip install --prefix __prefix__ -U -r __code_path__/requirements.txt
+- python3 -m pip install --prefix __prefix__ -U __argv__ __code_path__
+uninstall:
+- python3 -m pip uninstall -y name

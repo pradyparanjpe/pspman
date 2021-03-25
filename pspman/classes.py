@@ -23,10 +23,10 @@ object classes
 '''
 
 
-import os
 import typing
 import re
 from datetime import timezone, datetime
+from pathlib import Path
 import json
 import yaml
 from psprint import print
@@ -58,8 +58,8 @@ class InstallEnv():
     '''
     def __init__(self, config: MetaConfig, **kwargs):
         self.call_function: typing.Optional[str] = kwargs.get('call_function')
-        self._clone_dir: typing.Optional[str] = kwargs.get('clone_dir')
-        self.prefix: str = kwargs.get('prefix', config.data_dir)
+        self._clone_dir: typing.Optional[Path] = kwargs.get('clone_dir')
+        self._prefix: str = kwargs.get('prefix', config.data_dir)
         self.risk: bool = kwargs.get('risk', False)
         self.pull: bool = kwargs.get('pull', False)
         self.stale: bool = kwargs.get('stale', False)
@@ -68,10 +68,18 @@ class InstallEnv():
         self.delete: typing.List[str] =  kwargs.get('delete', [])
 
     @property
-    def clone_dir(self) -> str:
+    def prefix(self) -> Path:
+        return Path(self._prefix)
+
+    @prefix.setter
+    def prefix(self, value):
+        self._prefix = str(value)
+
+    @property
+    def clone_dir(self) -> Path:
         if self._clone_dir is None:
-            return os.path.join(self.prefix, 'src')
-        return self._clone_dir
+            return self.prefix.joinpath('src')
+        return Path(self._clone_dir)
 
     @clone_dir.setter
     def clone_dir(self, value):
@@ -162,8 +170,7 @@ class GitProject():
             return self.name
         if self.url is None:
             raise GitURLError
-        self.name = os.path.splitext(self.url.replace(':', '/')
-                                     .split('/')[-1])[0]
+        self.name = Path(self.url.replace(':', '/').split('/')[-1]).stem
         return self.name
 
     def merge(self, data: typing.Dict[str, object]) -> None:
@@ -177,36 +184,6 @@ class GitProject():
         '''
         for key, val in data.items():
             self.__dict__[key] = self.__dict__.get(key) or val
-
-    def type_install(self, env: InstallEnv) -> None:
-        '''
-        Determine guess the installation type based on files present
-        in the cloned directory.
-
-        Args:
-            env: context in which, type_install is called.
-        '''
-        if env.pull or self.pull:
-            self.tag &= 0x0F
-            return
-        if self.name is None:
-            if self.update_name() is None:
-                raise GitURLError()
-        path = os.path.join(env.clone_dir, self.name)
-        if any(os.path.exists(os.path.join(path, make_sign)) for
-               make_sign in ('Makefile', 'configure')):
-            self.tag |= ACTION_TAG['make']
-        elif any(os.path.exists(os.path.join(path, pip_sign)) for
-                 pip_sign in ('setup.py', 'setup.cfg')):
-            self.tag |= ACTION_TAG['pip']
-        elif os.path.exists(os.path.join(path, 'meson.build')):
-            self.tag |= ACTION_TAG['meson']
-        elif os.path.exists(os.path.join(path, 'main.go')):
-            self.tag |= ACTION_TAG['go']
-        elif os.path.exists(os.path.join(path, 'CMakeLists.txt')):
-            self.tag |= ACTION_TAG['cmake']
-        else:
-            self.tag &= 0x0F
 
     def mark_update_time(self):
         '''

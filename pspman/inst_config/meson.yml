@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8; mode:python -*-
+# -*- coding:utf-8; mode:yaml -*-
 #
 # Copyright 2020 Pradyumna Paranjape
 # This le is part of pspman.
@@ -17,38 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with pspman.  If not, see <https://www.gnu.org/licenses/>.
 #
-'''
-PSPMAN: **PS**\ eudo **P**\ ackage **Man**\ ager
 
-'''
+indicate:
+- meson.build
+requires:
+- meson
+- ninja
+env: {}
+install:
+- ^pspman -f -c __code_path__/submodules -p __prefix__
+- meson --buildtype=release --prefix __prefix__ __argv__ -Db_lto=true __build_dir__ __code_path__
+- meson install -C __build_dir__
 
-
-# Globally defined environment configuration
-from pathlib import Path
-from psprint import init_print
-from .classes import InstallEnv
-from .config import read_config
-
-
-print = init_print(Path(__file__).resolve()
-                   .parent.joinpath(".psprintrc.yml")).psprint
-'''
-Customized psprint function
-
-'''
-
-
-# ConfigBase
-CONFIG = read_config()
-'''
-Meta data information about C_DIR(s), configuration directory, etc
-'''
-
-# set configurations
-ENV = InstallEnv(CONFIG)
-'''
-Standard installation context
-'''
-
-
-__version__ = '1!1.2.0'
+uninstall:
+- ^pspman -f -c __code_path__/submodules -p __prefix__
+- meson --buildtype=release --prefix __prefix__ __argv__ -Db_lto=true __build_dir__ __code_path__
+- meson uninstall -C __build_dir__

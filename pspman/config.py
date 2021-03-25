@@ -24,104 +24,108 @@ Configuration
 
 
 import os
+from pathlib import Path
 import typing
 import yaml
 from .errors import PathNameError
 
 
-def _config_dir(path: str = None) -> str:
+def _config_dir(config: typing.Union[str, os.PathLike] = None) -> Path:
     '''
     Guess the default configuration path based on XDG_CONFIG_HOME variable
     Following paths are checked in order until a feasable target is found
 
-        * ``path``
+        * ``config``
         * ${XDG_CONFIG_HOME}/pspman
         * ${HOME}/.config/pspman
         * ${HOME}/.pspman
         * ${PWD}/.pspman
 
     Args:
-        path: recommended config directory
+        config: recommended config directory
 
     Returns:
         Path to config dir
 
     '''
-    if path:
-        if os.path.isdir(path):
+    if config:
+        config_path = Path(config)
+        if config_path.is_dir():
             # Deliberately not creating anew
-            return path
+            return config_path.resolve()
         else:
-            err_str = f"Configuration path '{path}' does not exist."\
-                + f"Do you mean {os.path.split(path)[0]}?"
+            err_str = f"Configuration directory '{config}' does not exist."\
+                + f"Do you mean {config_path.parent}?"
             raise FileNotFoundError(err_str)
-    config_dir = os.environ.get('XDG_CONFIG_HOME')
-    if config_dir is not None:
-        config_path = os.path.join(config_dir, 'pspman')
-        os.makedirs(config_path, exist_ok=True)
-        return config_path
+    config_var = os.environ.get('XDG_CONFIG_HOME')
+    if config_var is not None:
+        config_path = Path(config_var).joinpath('pspman')
+        config_path.mkdir(parents=True, exist_ok=True)
+        return config_path.resolve()
     home_dir = os.environ.get('HOME')
     if home_dir is None:
         # On which wierd operating system is this installed!
-        config_path = ".pspman"
-        os.makedirs(config_path, exist_ok=True)
-        return ".pspman"
-    config_dir = os.path.join(home_dir, '.config')
-    config_path = os.path.join(config_dir, 'pspman')
-    if os.path.isdir(config_dir):
-        os.makedirs(config_path, exist_ok=True)
-        return config_path
+        config_path = Path(".pspman")
+        config_path.mkdir(parents=True, exist_ok=True)
+        return config_path.resolve()
+    config_dir = Path(home_dir).joinpath('.config')
+    config_path = config_dir.joinpath('pspman')
+    if config_dir.is_dir():
+        config_path.mkdir(parents=True, exist_ok=True)
+        return config_path.resolve()
     # Why don't you have .config!
-    config_path = os.path.join(home_dir, '.pspman')
-    os.makedirs(config_path, exist_ok=True)
-    return config_path
+    config_path = Path(home_dir).joinpath('.pspman')
+    config_path.mkdir(parents=True, exist_ok=True)
+    return config_path.resolve()
 
 
-def _data_dir(path: str = None) -> str:
+def _data_dir(data: str = None) -> Path:
     '''
     Guess the default data path based on XDG_DATA_HOME variable
     Following paths are checked in order until a feasable target is found
 
-        * ``path``
+        * ``data``
         * ${XDG_DATA_HOME}/pspman
         * ${HOME}/.local/share/pspman
         * ${HOME}/.pspman
         * ${PWD}/.pspman
 
     Args:
-        path: recommended data directory
+        data: recommended data directory
 
     Returns:
         path to config dir
 
     '''
-    if path:
-        if os.path.isdir(path):
+    if data:
+        data_path = Path(data)
+        if data_path.is_dir():
             # Deliberately not creating anew
-            return path
+            return data_path.resolve()
         else:
-            err_str = f"Data path '{path}' does not exist." + \
-                f"Do you mean {os.path.split(path)[0]}?"
+            err_str = f"Data path '{data_path}' does not exist." + \
+                f"Do you mean {data_path.parent}?"
             raise FileNotFoundError(err_str)
-    data_dir = os.environ.get('XDG_DATA_HOME')
-    if data_dir is not None:
-        data_path = os.path.join(data_dir, 'pspman')
-        os.makedirs(data_path, exist_ok=True)
-        return data_path
+    data_var = os.environ.get('XDG_DATA_HOME')
+    if data_var is not None:
+        data_path = Path(data_var).joinpath('pspman')
+        data_path.mkdir(parents=True, exist_ok=True)
+        return data_path.resolve()
     home_dir = os.environ.get('HOME')
     if home_dir is None:
-        # On which wierd operating system is this installed?
-        data_path = ".pspman"
-        os.makedirs(data_path, exist_ok=True)
-        return ".pspman"
-    data_dir = os.path.join(home_dir, '.local', 'share')
-    data_path = os.path.join(data_dir, 'pspman')
-    if os.path.isdir(data_dir):
-        os.makedirs(data_path, exist_ok=True)
-        return data_path
-    data_path = os.path.join(home_dir, '.pspman')
-    os.makedirs(data_path, exist_ok=True)
-    return data_path
+        # On which wierd operating system is this installed!
+        data_path = Path(".pspman")
+        data_path.mkdir(parents=True, exist_ok=True)
+        return data_path.resolve()
+    data_dir = Path(home_dir).joinpath('.local', 'share')
+    data_path = data_dir.joinpath('pspman')
+    if data_dir.is_dir():
+        data_path.mkdir(parents=True, exist_ok=True)
+        return data_path.resolve()
+    # Why don't you have .data!
+    data_path = Path(home_dir).joinpath('.pspman')
+    data_path.mkdir(parents=True, exist_ok=True)
+    return data_path.resolve()
 
 
 class GroupDB():
@@ -136,9 +140,10 @@ class GroupDB():
             * rest are ignored
 
     Attributes:
-        path: path to Group
+        grp_path: path to Group
         name: custom-name for group [default: leaf of path]
-        exists: whether path exists os.exists
+        exists: whether path exists
+        locked: locked by another process?
         clone_type: type of clones (0[default], -1, 1)
 
             * 1: all projects are installable
@@ -147,8 +152,11 @@ class GroupDB():
 
     '''
     def __init__(self, **kwargs):
-        self.path: str
-        self._path: typing.Optional[str] = kwargs.get('path')
+        grp_path = kwargs.get('grp_path')
+        if grp_path is None:
+            self._grp_path: typing.Optional[str] = None
+        else:
+            self._grp_path = str(grp_path)
         self.clone_type = int(kwargs.get('clone_type', 0))
 
         # Infer from parent.__dict__
@@ -160,7 +168,7 @@ class GroupDB():
 
     @property
     def locked(self) -> bool:
-        if os.path.isfile(os.path.join(self.path, '.proc.lock')):
+        if self.grp_path.joinpath('.proc.lock').exists():
             return True
         return False
 
@@ -175,20 +183,20 @@ class GroupDB():
         return
 
     @property
-    def path(self) -> str:
-        if self._path:
-            return os.path.abspath(self._path)
+    def grp_path(self) -> Path:
+        if self._grp_path:
+            return Path(self._grp_path).resolve()
         raise ValueError('Value for path not provided')
 
-    @path.setter
-    def path(self, value: str):
-        self._path = os.path.abspath(value)
+    @grp_path.setter
+    def grp_path(self, value: typing.Union[str, os.PathLike]):
+        self._grp_path = str(Path(value).resolve())
 
     @property
     def exists(self) -> bool:
-        if self.path is None:
+        if self.grp_path is None:
             return False
-        return os.path.isdir(self.path)
+        return self.grp_path.is_dir()
 
     @exists.setter
     def exists(self, val):
@@ -206,19 +214,19 @@ class GroupDB():
         '''
         if hasattr(self, 'name'):
             return self.name
-        if self.path is None:
+        if self.grp_path is None:
             raise PathNameError()
-        return os.path.split(self.path)[-1]
+        return self.grp_path.stem
 
     def mk_structure(self):
         '''
         Generate a directory structure for the GitGroup
         '''
-        os.makedirs(self.path, exist_ok=True)
+        self.grp_path.mkdir(parents=True, exist_ok=True)
         dir_struct = ("bin", "etc", "include", "lib", "lib64", "libexec",
                       "programs", "share", "src", "tmp", "usr")
         for workdir in dir_struct:
-            os.makedirs(os.path.join(self.path, workdir), exist_ok=True)
+            self.grp_path.joinpath(workdir).mkdir(parents=True, exist_ok=True)
 
     def merge(self, data: typing.Dict[str, object]) -> None:
         '''
@@ -240,7 +248,7 @@ class GroupDB():
         locked = ('No', 'Yes')[int(self.locked)]
         return f'''
         name: {self.name}
-        path: {self.path}
+        path: {self.grp_path}
         exists: {self.exists}
         locked: {locked}
         clone_type: {clone_type}
@@ -260,15 +268,16 @@ class MetaConfig():
         meta_db_dirs: registry of all GroupDBs
         config_dir: pspman configuration directory
         data_dir: pspman default data directory
-        opt_in: opted installation methods [pip, make, cmake, meson, go]
+        opt_in: opted installation methods
 
     '''
     def __init__(self, **kwargs):
-        self.meta_db_dirs: typing.Dict[str, GroupDB] = {}
+        self.meta_db_dirs: typing.Dict[str, GroupDB] =\
+            kwargs.get('meta_db_dirs') or {}
         self.config_dir = _config_dir(kwargs.get('config_dir'))
         self.data_dir = _data_dir(kwargs.get('data_dir'))
-        self.opt_in: typing.List[str] = []
-        for group in kwargs.get('meta_db_dirs', {}).values():
+        self.opt_in: typing.List[str] = kwargs.get('opt_in') or []
+        for group in (kwargs.get('meta_db_dirs') or {}).values():
             self.add(group)
 
     def add(self, group: typing.Union[GroupDB, dict]):
@@ -282,7 +291,7 @@ class MetaConfig():
             group = GroupDB(data=group)
         if group.name in self.meta_db_dirs:
             return
-        if group.path == self.data_dir and group.name != 'default':
+        if group.grp_path == self.data_dir and group.name != 'default':
             # Default prefix
             return
         self.meta_db_dirs[group.name] = group
@@ -309,17 +318,18 @@ class MetaConfig():
         for name in zombies:
             self.remove(name)
 
-    def load(self, psp_config: str) -> bool:
+    def load(self, psp_config_file: typing.Union[os.PathLike, str]) -> bool:
         '''
         Load meta configuration
 
         Args:
-            psp_config: yaml file containing GroupDB meta data
+            psp_config_dir: yaml file containing GroupDB meta data
 
         Returns:
             ``True`` if file was successfully loaded
         '''
-        if not os.path.isfile(psp_config):
+        psp_config = Path(psp_config_file)
+        if not psp_config.is_file():
             return False
         with open(psp_config, 'r') as conf_fh:
             groups_data: typing.Dict[str, dict] = yaml.safe_load(conf_fh)
@@ -331,27 +341,24 @@ class MetaConfig():
         '''
         Refresh a configuration file
 
-        Args:
-            psp_config: path to pspman config file (yml)
-
         '''
-        psp_config = os.path.join(self.config_dir, 'config.yml')
+        psp_config = self.config_dir.joinpath('config.yml')
         with open(psp_config, 'w') as conf_fh:
             for group_name, group_db in self.meta_db_dirs.items():
                 yaml.dump({group_name: group_db.__dict__}, conf_fh)
 
 
-def read_config(path: str = None) -> MetaConfig:
+def read_config(config_file: str = None) -> MetaConfig:
     '''
     Read and maintain default configurations
 
     Args:
-        path: path to file containing configurations
+        config_file: path to file containing configurations
 
     Returns:
         Configuration
     '''
-    psp_config = os.path.join(_config_dir(), 'config.yml')
+    psp_config = _config_dir(config_file).joinpath('config.yml')
     config = MetaConfig()
     if config.load(psp_config):
         config.prune()
@@ -363,7 +370,8 @@ def read_config(path: str = None) -> MetaConfig:
         "# \033[0;97;40mpspman init\033[0m:",
         '',
         "Check help for omitting some installation methods: run without '# ':",
-        "# \033[0;97;40mpspman init -g033[0m:",
+        "# \033[0;97;40mpspman init -h\033[0m:",
+        '',
     ]
     print("\n    ".join(init_msg))
     return config

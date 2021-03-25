@@ -38,17 +38,14 @@ All `actions` accept same set of args and return same type of object
 '''
 
 
-import os
 import typing
 import shutil
+from pathlib import Path
 from . import print, CONFIG
 from .shell import git_comm
 from .classes import InstallEnv, GitProject
 from .tag import ACTION_TAG, FAIL_TAG, TAG_ACTION, RET_CODE
-from .installations import (install_make, install_pip,
-                            install_meson, install_go, install_cmake)
-from .uninstallations import (remove_make, remove_pip,
-                              remove_meson, remove_go, remove_cmake)
+from .installations import INST_METHODS, run_install
 
 
 def delete(
@@ -73,38 +70,41 @@ def delete(
     This project may be added again using:
     pspman -i {project.url}
     ''', mark='delete' )
-    inst_tag = project.tag & 0xf0
-    if inst_tag and TAG_ACTION[inst_tag] in CONFIG.opt_in:
-        # Attempt uninstallation
+    # Attempt uninstallation
+    code_path = Path(env.clone_dir).joinpath(project.name)
+    i_type = None
+    for method_name, method in INST_METHODS.items():
+        if (any(code_path.joinpath(id_file).exists()
+                for id_file in method.instruct.indicate) and not
+            any(code_path.joinpath(xd_file).exists()
+                for xd_file in method.instruct.exdicate)):
+            i_type = method_name
+            break
+    if i_type is not None:
+        # Known uninstallation method
         if env.verbose:
             print( f'''
-            Trying standard uninstall calls with {TAG_ACTION[inst_tag]}.
+            Trying standard uninstall calls with {i_type}.
             This may not always be clean; some scars may stay back.
             ''', mark='delete')
-
-        remove_call: typing.Callable = {
-            0x10: remove_make, 0x20: remove_pip, 0x30: remove_meson,
-            0x40: remove_go, 0x80: remove_cmake
-        }.get(inst_tag, lambda **_: True)
-        success = remove_call(code_path=os.path.join(env.clone_dir,
-                                                     project.name),
+        success = run_install(i_type='u_' + i_type, code_path=code_path,
                               prefix=env.prefix, argv=project.inst_argv,
                               env=project.sh_env)
         if not success:
             if env.verbose:
                 print(f'FAILED Uninstalling project {project.name}',
                       mark='fdelete')
-                print(f'Proceeding to delete the source code anyway...',
+                print(f'Proceeding to delete the source code anyway..',
                       mark='info')
     else:
-        if env.verbose and inst_tag:
+        if env.verbose:
             print(f'PSPMan was initialized only with {CONFIG.opt_in}')
 
     # Erase source code
     if env.verbose:
         print('Erasing source code', mark='delete')
     try:
-        shutil.rmtree(os.path.join(env.clone_dir, project.name))
+        shutil.rmtree(Path(env.clone_dir).joinpath(project.name))
         return project.name, project.tag & (0xff - ACTION_TAG['delete']),\
             RET_CODE['pass']
     except OSError:
@@ -134,13 +134,12 @@ def clone(
     gitkwargs: typing.Dict[str, typing.Optional[str]] = {}
     if project.branch is not None:
         gitkwargs['branch'] = project.branch
-    success = git_comm(clone_dir=os.path.join(env.clone_dir, project.name),
+    success = git_comm(clone_dir=Path(env.clone_dir).joinpath(project.name),
                        motive=(project.url, project.name), gitkwargs=gitkwargs)
     if success is None:
         # STDERR thrown
         print(f'Failed to clone source of {project.name}', mark='fclone')
         return (project.name, project.tag, RET_CODE['fail'])
-    project.type_install(env=env)
     if env.verbose:
         print(f'{project.name} cloned', mark='clone')
     tag = (project.tag | ACTION_TAG['install']) & (0xff - ACTION_TAG['pull'])
@@ -163,7 +162,7 @@ def update(
 
     '''
     env, project = args
-    g_pull = git_comm(clone_dir=os.path.join(env.clone_dir, project.name),
+    g_pull = git_comm(clone_dir=Path(env.clone_dir).joinpath(project.name),
                       motive='pull')
     if g_pull is not None:
         # STDERR from pull was blank
@@ -203,19 +202,25 @@ def install(
         if env.verbose:
             print(f'Not trying to install {project.name}', mark='bug')
         return project.name, tag, RET_CODE['asis']
-    install_call: typing.Callable = {
-        0x10: install_make, 0x20: install_pip, 0x30: install_meson,
-        0x40: install_go, 0x80: install_cmake
-    }.get(project.tag&0xf0, lambda **_: True)
-    success = install_call(code_path=os.path.join(env.clone_dir, project.name),
-                           prefix=env.prefix, argv=project.inst_argv,
-                           env=project.sh_env)
-    if success:
-        if env.verbose:
-            print(f'Installed (update for) project {project.name}.',
-                  mark='install')
-        return project.name, project.tag & (0xff - ACTION_TAG['install']),\
-            RET_CODE['pass']
+    code_path = Path(env.clone_dir).joinpath(project.name)
+    i_type = None
+    for method_name, method in INST_METHODS.items():
+        if (any(code_path.joinpath(id_file).exists()
+                for id_file in method.instruct.indicate) and not
+            any(code_path.joinpath(xd_file).exists()
+                for xd_file in method.instruct.exdicate)):
+            i_type = method_name
+            break
+    if i_type is not None:
+        success = run_install(i_type=i_type, code_path=code_path,
+                              prefix=env.prefix, argv=project.inst_argv,
+                              env=project.sh_env)
+        if success:
+            if env.verbose:
+                print(f'Installed (update for) project {project.name}.',
+                      mark='install')
+            return project.name, project.tag & (0xff - ACTION_TAG['install']),\
+                RET_CODE['pass']
     if env.verbose:
         print(f'FAILED Installing (update for) project {project.name}',
               mark='finstall')

@@ -148,3 +148,6 @@ pypi.sh
 
 # feature plans
 docs/_plan/
+
+# backup files
+**/*.bak

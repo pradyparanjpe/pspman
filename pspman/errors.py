@@ -22,6 +22,10 @@ Exceptions, Warnings, Errors
 '''
 
 
+import os
+import typing
+
+
 class PSPManError(Exception):
     '''
     base error for papman
@@ -95,3 +99,39 @@ class CommandError(PSPManError):
         STDERR from command:
         {err}
         ''')
+
+class InstructError(PSPManError):
+    '''
+    Base class for instruction files error
+    '''
+
+class InstructFmtError(InstructError):
+    '''
+    Error parsing installation instructions file
+
+    Args:
+        instruct_file: name of file with fault
+    '''
+    def __init__(self, instruct_file: typing.Union[str, os.PathLike],
+                 *args) -> None:
+        super().__init__(self, f'{instruct_file} is incorrectly formatted')
+
+class MissingInstructError(InstructError):
+    '''
+    Error in installation instructions file: necessary instruction missing
+
+    Args:
+        instruct_file: name of file with fault
+        missing: name of argument missing
+    '''
+    def __init__(self, missing: str) -> None:
+        super().__init__(self, f'missing instruction: {missing}')
+
+class InstructTypeError(TypeError, InstructError):
+    '''
+    Wrong type of instruction
+    '''
+    def __init__(self, key: str, found_type: type, want_type: str):
+        super().__init__(
+            self, f'{key}: is of type: {found_type}; expected: {want_type}'
+        )

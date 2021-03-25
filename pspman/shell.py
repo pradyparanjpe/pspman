@@ -26,6 +26,7 @@ shell functions
 import os
 import typing
 import subprocess
+from pathlib import Path
 from .errors import CommandError
 from . import print
 
@@ -68,7 +69,7 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
         print(cmd_l, mark='act')
         print(stdout, mark='bug')
         print(stderr, mark='err')
-        print("return:", process.returncode, mark='err')
+        print("returncode:", process.returncode, mark='err')
     if process.returncode != 0:
         if fail_handle == 'fail':
             raise CommandError(cmd_l, stderr)
@@ -80,7 +81,7 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
 
 
 def git_comm(
-        clone_dir: str,
+        clone_dir: Path,
         motive: typing.Union[str, typing.Tuple[str, str]] = None,
         gitkwargs: typing.Dict[str, typing.Optional[str]] = None,
         prockwargs: typing.Dict[str, str] = None) -> typing.Optional[str]:
@@ -116,16 +117,16 @@ def git_comm(
 
     if isinstance(motive, str):
         if motive == 'pull':
-            cmd.extend(('-C', clone_dir, 'pull', '--recurse-submodules'))
+            cmd.extend(('-C', str(clone_dir), 'pull', '--recurse-submodules'))
         else:
-            cmd.extend(("-C", clone_dir, 'remote', "-v"))
+            cmd.extend(("-C", str(clone_dir), 'remote', "-v"))
     else:
         if not isinstance(motive, (tuple, list)) or len(motive) != 2:
             return None
         url, name = motive
         if not(isinstance(url, str) and isinstance(name, str)):
             return None
-        cmd.extend(('-C', os.path.split(clone_dir)[0], 'clone', url, name))
+        cmd.extend(('-C', str(clone_dir.parent), 'clone', url, name))
 
     # Parse gitkwargs into arguments
     for key, val in gitkwargs.items():

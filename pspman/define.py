@@ -27,6 +27,7 @@ import os
 import sys
 import typing
 import subprocess
+from pathlib import Path
 import argparse
 import shutil
 import argcomplete
@@ -77,14 +78,8 @@ def cli(config: MetaConfig = None) -> argparse.ArgumentParser:
 
     init = sub_parsers.add_parser(name='init', aliases=['initialize'],
                                   help='initialize pspman')
-    init.add_argument('--make', '-m', action='store_true',
-                      help='initialize without make (also without cmake)')
-    init.add_argument('--cmake', '-c', action='store_true',
-                      help='initialize without cmake')
-    init.add_argument('--meson', '-n', action='store_true',
-                      help='initialize without meson/ninja')
-    init.add_argument('--go', '-g', action='store_true',
-                      help='initialize without go')
+    init.add_argument('--ignore', '-i', type=str, metavar='DEP', nargs='*',
+                      help='initialize without dependency DEP')
 
     goodbye = sub_parsers.add_parser(name='goodbye', aliases=['de-initialize'],
                                      help='Cleanup before uninstalling pspman')
@@ -155,13 +150,10 @@ def cli_opts(config: MetaConfig = None) -> typing.Dict[str, typing.Any]:
         setattr(args, 'call_function', 'version')
     if args.init:
         setattr(args, 'call_function', 'init')
-    setattr(args, 'cmake', getattr(args, 'cmake', False) or
-            getattr(args, 'make', False)
-            )
     return vars(args)
 
 
-def perm_pass(env: InstallEnv, permdir: str) -> int:
+def perm_pass(env: InstallEnv, permdir: Path) -> int:
     '''
     Args:
         permdir: directory whose permissions are to be checked
@@ -172,9 +164,9 @@ def perm_pass(env: InstallEnv, permdir: str) -> int:
     '''
     if env.verbose:
         print(f'Checking permissions for {permdir}')
-    while not os.path.exists(permdir):
+    while not permdir.exists():
         # clone/prefix directory get be created anew
-        permdir = os.path.split(os.path.realpath(permdir))[0]
+        permdir = permdir.resolve().parent
         if env.verbose:
             print(f'Checking permissions for the parent: {permdir}')
     user = os.environ.get('USER', 'root')
@@ -246,8 +238,8 @@ def prepare_env(env: InstallEnv) -> int:
         if err != 0:
             print('Bye', mark=0)
             return err
-    os.makedirs(env.clone_dir, exist_ok=True)
-    os.makedirs(env.prefix, exist_ok=True)
+    env.clone_dir.mkdir(parents=True, exist_ok=True)
+    env.prefix.mkdir(parents=True, exist_ok=True)
     return 0
 
 
@@ -263,35 +255,34 @@ def lock(env: InstallEnv, unlock: bool = False):
         Error code
 
     '''
-    lockfile = os.path.join(env.clone_dir, '.proc.lock')
+    lock_path = env.clone_dir.joinpath('.proc.lock')
     # lockfile is deliberately human-readable
 
-    if os.path.exists(lockfile):
+    if lock_path.exists():
         # directory is locked
         if unlock:
             # restore all backup databases
             for filetype in "healthy", "fail":
-                backup_file = os.path.join(env.clone_dir,
-                                           f".pspman.{filetype}.yml")
-                if os.path.isfile(backup_file + ".bak") and \
-                   not os.path.isfile(backup_file):
-                    os.rename(backup_file + ".bak", backup_file)
-            temp_build = os.path.join(env.prefix, 'temp_build')
-            if os.path.isdir(temp_build):
+                backup_file = env.clone_dir.joinpath(f".pspman.{filetype}.yml")
+                if backup_file.with_suffix('.yml.bak').is_file() and \
+                   not backup_file.is_file():
+                    backup_file.with_suffix(".yml.bak").replace(backup_file)
+            temp_build = env.prefix.joinpath('temp_build')
+            if temp_build.is_dir():
                 shutil.rmtree(temp_build)
-            os.remove(lockfile)
+            lock_path.unlink()
             return 1
-        with open(lockfile, 'r') as lock_fh:
-            print(f"Process with id {lock_fh.read()} is incomplete...", mark='err')
+        with open(lock_path, 'r') as lock_fh:
+            print(f"Process with id {lock_fh.read()} is incomplete...",
+                  mark='err')
         print("Either wait for the process to get completed")
         print("OR interrupt the process and execute")
-        print(f"pspman -c {os.path.split(env.clone_dir)[0]} unlock",
-              mark='act')
+        print(f"pspman -c {env.clone_dir.parent} unlock", mark='act')
         print("This WILL generally MESS UP source codes.", mark='warn')
         return 2
     if unlock:
-        print(f'Lockfile {lockfile} not found.')
+        print(f'Lockfile {lock_path} not found.')
         return 2
-    with open(lockfile, 'w') as lock_fh:
+    with open(lock_path, 'w') as lock_fh:
         lock_fh.write(str(os.getpid()))
     return 0

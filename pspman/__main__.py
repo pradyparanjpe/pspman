@@ -28,6 +28,7 @@ from .psp_in import init, de_init
 from .config import GroupDB
 from . import ENV, CONFIG, print, __version__
 from .define import cli_opts, prepare_env, lock
+from .installations import INST_METHODS
 from .serial_actions import (interrupt, find_gits, end_queues, init_queues,
                              del_projects, add_projects, print_projects,
                              update_projects, print_prefixes)
@@ -54,14 +55,16 @@ def call() -> int:
         return 0
 
     if call_function == 'init':
-        opt_in = [i_t for i_t in ('make', 'cmake', 'meson', 'go')
-                   if not cli_kwargs.get(i_t, False)]
-        err = init(CONFIG, out_out=opt_in)
+        opt_in = [i_t
+                  for d_i in INST_METHODS.values()
+                  for i_t in d_i.instruct.requires
+                  if i_t not in (cli_kwargs.get('ignore') or [])]
+        err = init(CONFIG, opt_in=opt_in)
         if err:
             return err
         # Build meta
         CONFIG.opt_in = opt_in
-        default_git_grp = GroupDB(path=CONFIG.data_dir, name='default')
+        default_git_grp = GroupDB(grp_path=CONFIG.data_dir, name='default')
         CONFIG.add(default_git_grp)
         CONFIG.store()
         default_git_grp.mk_structure()
@@ -122,7 +125,7 @@ def call() -> int:
         end_queues(env=env, queues=queues)
         lock(env=env, unlock=True)
         print()
-        CONFIG.add({'path': env.prefix})
+        CONFIG.add({'grp_path': env.prefix})
         CONFIG.prune()
         CONFIG.store()
         print('done.', mark=1)
