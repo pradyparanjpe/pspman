@@ -332,15 +332,3 @@ def run_install(i_type: str,
             return False
     shutil.rmtree(build_dir)
     return True
-
-
-if __name__ == "__main__":
-    for install_type in INST_METHODS.keys():
-        print(install_type + ":")
-        run_install(i_type=install_type, code_path=Path("source_code"),
-                    prefix=Path("/home/pradyumna/.local"),
-                    argv=["type=-test", "--develop"])
-        run_install(i_type="u_" + install_type, code_path=Path("source_code"),
-                    prefix=Path("/home/pradyumna/.local"),
-                    argv=["type=-test", "--develop"])
-        print()

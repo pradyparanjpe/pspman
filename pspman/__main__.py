@@ -29,6 +29,7 @@ from .config import GroupDB
 from . import ENV, CONFIG, print, __version__
 from .define import cli_opts, prepare_env, lock
 from .installations import INST_METHODS
+from .shell import git_clean
 from .serial_actions import (interrupt, find_gits, end_queues, init_queues,
                              del_projects, add_projects, print_projects,
                              update_projects, print_prefixes)
@@ -100,6 +101,11 @@ def call() -> int:
         lock(env=env, unlock=True)
         return print_projects(env=env, git_projects=git_projects,
                               failed_projects=failed_projects)
+
+    # resets:
+    for clean_code in env.reset:
+        if clean_code in git_projects:
+            git_clean(env.clone_dir.joinpath(git_projects[clean_code].name))
 
     queues = init_queues(env=env)
     try:

@@ -78,7 +78,7 @@ def process_comm(*cmd: str, p_name: str = 'processing', timeout: int = None,
             if fail_handle == 'nag':
                 print(stderr, mark=4)
             return None
-    return stdout
+    return stdout or 'success'
 
 
 def git_comm(cmd: typing.List[str], g_name: str = 'process', gitkwargs:
@@ -125,11 +125,10 @@ def git_clean(clone_dir: Path, gitkwargs:
         Output from process_comm
 
     '''
-    reset = ['git', '-C', str(clone_dir), 'reset', '--hard', ':/']
-    clean = ['git', '-C', str(clone_dir), 'clean', '-f', ':/']
-    success = bool(git_comm(reset, g_name='reset', gitkwargs=gitkwargs,
-                            prockwargs=prockwargs))
-    if not success:
+    checkout = ['git', '-C', str(clone_dir), 'checkout', 'HEAD', '--', ':/']
+    clean = ['git', '-C', str(clone_dir), 'clean', '-f', '--', ':/']
+    if not bool(git_comm(checkout, g_name='checkout', gitkwargs=gitkwargs,
+                         prockwargs=prockwargs)):
         return None
     return git_comm(clean, g_name='clean', gitkwargs=gitkwargs,
                     prockwargs=prockwargs)

@@ -64,6 +64,7 @@ class InstallEnv():
         self.pull: bool = kwargs.get('pull', False)
         self.stale: bool = kwargs.get('stale', False)
         self.verbose: bool = kwargs.get('verbose', False)
+        self.reset: typing.List[str] = kwargs.get('reset', [])
         self.install: typing.List[str] = kwargs.get('install', [])
         self.delete: typing.List[str] =  kwargs.get('delete', [])
 
@@ -95,6 +96,7 @@ class InstallEnv():
         Prefix: {self.prefix}
 
         Called sub-function: {self.call_function}
+        Clean-Resets Requested: {len(self.reset)}
         Deletions Requested: {len(self.delete)}
         Additions requested: {len(self.install)}
 

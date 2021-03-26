@@ -112,6 +112,8 @@ def cli(config: MetaConfig = None) -> argparse.ArgumentParser:
 Please check if you want to add this to PATH.
 [default: PREF{os.sep}src]
 ''')
+    parser.add_argument('-r', '--reset', metavar='PROJ', type=str, nargs='*',
+                        default=[], help='clean-reset PROJ code')
     parser.add_argument('-d', '--delete', metavar='PROJ', type=str, nargs='*',
                         default=[], help='delete PROJ')
     parser.add_argument('-i', '--install', metavar='URL', type=str, nargs='*',

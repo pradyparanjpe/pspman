@@ -163,7 +163,6 @@ def update(
     '''
     env, project = args
     code_path = Path(env.clone_dir).joinpath(project.name)
-    git_clean(code_path)
     g_pull = git_pull(clone_dir=code_path)
     if g_pull is not None:
         # STDERR from pull was blank
