@@ -24,7 +24,7 @@ python module call
 
 import os
 import typing
-from .psp_in import init, de_init
+from .psp_in import init, de_init, init_banner
 from .config import GroupDB
 from . import ENV, CONFIG, print, __version__
 from .define import cli_opts, prepare_env, lock
@@ -69,7 +69,7 @@ def call() -> int:
         CONFIG.add(default_git_grp)
         CONFIG.store()
         default_git_grp.mk_structure()
-        print("Close this shell (terminal) and open another session.")
+        init_banner()
         return 0
 
     if call_function == 'version':

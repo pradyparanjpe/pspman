@@ -367,10 +367,10 @@ def read_config(config_file: str = None) -> MetaConfig:
         'PSPMan is not initialized',
         '',
         "To initialize: run without '# ':",
-        "# \033[0;97;40mpspman init\033[0m:",
+        "# \033[0;97;40mpspman init\033[m:",
         '',
         "Check help for omitting some installation methods: run without '# ':",
-        "# \033[0;97;40mpspman init -h\033[0m:",
+        "# \033[0;97;40mpspman init -h\033[m:",
         '',
     ]
     print("\n    ".join(init_msg))

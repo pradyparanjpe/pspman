@@ -54,7 +54,7 @@ def cli(config: MetaConfig = None) -> argparse.ArgumentParser:
 
     \033[1;91mNOTICE: This is only intended for "user" packages.
     CAUTION: DO NOT RUN THIS SCRIPT AS ROOT.
-    CAUTION: If you still insist, I won't care.\033[0m
+    CAUTION: If you still insist, I won't care.\033[m
     '''
 
 
@@ -63,33 +63,8 @@ def cli(config: MetaConfig = None) -> argparse.ArgumentParser:
         description=description,
         formatter_class=argparse.RawTextHelpFormatter
     )
-    sub_parsers = parser.add_subparsers()
-    version = sub_parsers.add_parser(name='version', aliases=['ver'],
-                                     help='display version and exit')
-    unlock = sub_parsers.add_parser(name='unlock', aliases=[],
-                                    help='Unlock C_DIR and exit')
 
-    list_gits = sub_parsers.add_parser(
-        name='list', aliases=['info'],
-        help='display list of cloned repositories and exit'
-    )
-    list_gits.add_argument('--meta', '-m', action='store_true',
-                           help='List known C_DIR(s)')
-
-    init = sub_parsers.add_parser(name='init', aliases=['initialize'],
-                                  help='initialize pspman')
-    init.add_argument('--ignore', '-i', type=str, metavar='DEP', nargs='*',
-                      help='initialize without dependency DEP')
-
-    goodbye = sub_parsers.add_parser(name='goodbye', aliases=['de-initialize'],
-                                     help='Cleanup before uninstalling pspman')
-
-    init.set_defaults(call_function='init')
-    goodbye.set_defaults(call_function='goodbye')
-    version.set_defaults(call_function='version')
-    unlock.set_defaults(call_function='unlock')
-    list_gits.set_defaults(call_function='info')
-    parser.set_defaults(call_function=None)
+    # base arguments
     parser.add_argument('--init', action='store_true',
                         help='Initialize PSPMan')
     parser.add_argument('--version', action='store_true',
@@ -130,6 +105,43 @@ format: "URL[___branch[___'only'|___inst_argv[___sh_env]]]"
 * sh_env: VAR1=VAL1,VAR2=VAL2,VAR3=VAL3.... Modified install environment.
 
 ''')
+    parser.set_defaults(call_function=None)
+
+    # sub-commands
+    sub_parsers = parser.add_subparsers()
+
+    version = sub_parsers.add_parser(name='version', aliases=['ver'],
+                                     help='display version and exit')
+    version.set_defaults(call_function='version')
+
+    export = sub_parsers.add_parser(name='export', help='switch environment',
+                                    aliases=['environment', 'switch'])
+    export.add_argument('--revert', '-r', action='store_true',
+                        help='revert environment to base')
+    export.set_defaults(call_function='export')
+
+    unlock = sub_parsers.add_parser(name='unlock', aliases=[],
+                                    help='Unlock C_DIR and exit')
+    unlock.set_defaults(call_function='export')
+
+    list_gits = sub_parsers.add_parser(
+        name='list', aliases=['info'],
+        help='display list of cloned repositories and exit'
+    )
+    list_gits.add_argument('--meta', '-m', action='store_true',
+                           help='List known C_DIR(s)')
+    list_gits.set_defaults(call_function='info')
+
+    init = sub_parsers.add_parser(name='init', aliases=['initialize'],
+                                  help='initialize pspman')
+    init.add_argument('--ignore', '-i', type=str, metavar='DEP', nargs='*',
+                      help='initialize without dependency DEP')
+    init.set_defaults(call_function='init')
+
+    goodbye = sub_parsers.add_parser(name='goodbye', aliases=['de-initialize'],
+                                     help='Cleanup before uninstalling pspman')
+    goodbye.set_defaults(call_function='goodbye')
+
     return parser
 
 

@@ -7,8 +7,8 @@ PREREQUISITES
 - `cmake <https://cmake.org/install/>`__ (for ``cmake build``)
 - `go <https://golang.org/doc/install>`__ (for ``go install``)
 - `meson/ninja <https://mesonbuild.com/Getting-meson.html>`__ (for meson build, ninja install)
-- `bash <https://www.gnu.org/software/bash/>`__
-    - Although ``pspman`` itself does not require `bash`, all exports (PATH, PYTHONPATH) are made for `bash`, which is a commonly used shell. If you use any other shell, you need to export PATH and PYTHONPATH. A pull request on `init <https://github.com/pradyparanjpe/pspman/blob/master/pspman/psp_in.py>`__ is welcome.
+- A POSIX compliant shell (sh, bash, ksh, tcsh, zsh, …).
+
 
 INSTALL
 =======
@@ -41,6 +41,25 @@ REMEMBER, this is LGPLv3 (No warranty, your own risk, no guarantee of utility)
 .. code:: sh
 
    pspman init
+
+.. note::
+   Modifications tagged by ### PSPMAN_MOD ### will be written
+   to ``${HOME}/.profile``, since it is the generic PROfile.
+   If you are using `bash` (most likely) or `zsh` or any such
+   POSIX shell, and any of its login profiles (``.bash_profile``,
+   ``.bash_login``, ``.zlogin``, ``.zprofile``) exists, then,
+   you need to suitably edit that login profile to inherit standard
+   .profile, eg. by adding a line "``. "${HOME}"/.profile``".
+
+   A reminder for this will be shown at init.
+
+.. warning::
+   If you are using a non-POSIX shell such as `fish` or `command-prompt`\ (!),
+   PSPMan's init scripts won't care. You are responsible to locate and export
+   pspman's standard prefix. (Generally present at
+   ``${XDG_DATA_HOME:-${HOME}/.local/share}/pspman``)
+
+   If you do not understand this warning, you probably aren't using one.
 
 .. _recommended:
 
