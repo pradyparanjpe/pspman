@@ -114,15 +114,20 @@ format: "URL[___branch[___'only'|___inst_argv[___sh_env]]]"
                                      help='display version and exit')
     version.set_defaults(call_function='version')
 
-    export = sub_parsers.add_parser(name='export', help='switch environment',
-                                    aliases=['environment', 'switch'])
-    export.add_argument('--revert', '-r', action='store_true',
-                        help='revert environment to base')
-    export.set_defaults(call_function='export')
+    switch = sub_parsers.add_parser(
+        name='switch', aliases=['activate', 'export'],
+        help='switch to environment temporarily\n' +
+        'with additional *PATH variables from PREFIX')
+    switch.add_argument('switch_to', type=str, metavar='GIT_GROUP|PATH',
+                        help="GIT_GROUP's name or path", nargs='?',
+                        default='default')
+    switch.add_argument('-c', '--copy', action='store_true', dest='clipboard',
+                        help='try to copy soruce command to clipboard')
+    switch.set_defaults(call_function='switch')
 
     unlock = sub_parsers.add_parser(name='unlock', aliases=[],
                                     help='Unlock C_DIR and exit')
-    unlock.set_defaults(call_function='export')
+    unlock.set_defaults(call_function='unlock')
 
     list_gits = sub_parsers.add_parser(
         name='list', aliases=['info'],
@@ -257,19 +262,20 @@ def prepare_env(env: InstallEnv) -> int:
     return 0
 
 
-def lock(env: InstallEnv, unlock: bool = False):
+def lock(env: InstallEnv, unlock: bool = False, message: str = None):
     '''
     Unlock up the directory
 
     Args:
         env: installation context
         unlock: unlock existing locks?
+        message: message to be written in the lockfile instead of pid
 
     Returns:
         Error code
 
     '''
-    lock_path = env.clone_dir.joinpath('.proc.lock')
+    lock_path = env.prefix.joinpath('.proc.lock')
     # lockfile is deliberately human-readable
 
     if lock_path.exists():
@@ -287,16 +293,16 @@ def lock(env: InstallEnv, unlock: bool = False):
             lock_path.unlink()
             return 1
         with open(lock_path, 'r') as lock_fh:
-            print(f"Process with id {lock_fh.read()} is incomplete...",
+            print(f"This git-group was locked for safety by {lock_fh.read()}",
                   mark='err')
         print("Either wait for the process to get completed")
         print("OR interrupt the process and execute")
-        print(f"pspman -c {env.clone_dir.parent} unlock", mark='act')
-        print("This WILL generally MESS UP source codes.", mark='warn')
+        print(f"pspman -p {env.prefix} unlock", mark='act')
+        print("Interruption WILL generally MESS UP source codes.", mark='warn')
         return 2
     if unlock:
         print(f'Lockfile {lock_path} not found.')
         return 2
     with open(lock_path, 'w') as lock_fh:
-        lock_fh.write(str(os.getpid()))
+        lock_fh.write(str(message) or 'pid:' + str(os.getpid()))
     return 0

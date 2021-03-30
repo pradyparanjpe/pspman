@@ -24,12 +24,13 @@ python module call
 
 import os
 import typing
+from .shell import git_clean
 from .psp_in import init, de_init, init_banner
 from .config import GroupDB
 from . import ENV, CONFIG, print, __version__
 from .define import cli_opts, prepare_env, lock
 from .installations import INST_METHODS
-from .shell import git_clean
+from .switch_env import chenv
 from .serial_actions import (interrupt, find_gits, end_queues, init_queues,
                              del_projects, add_projects, print_projects,
                              update_projects, print_prefixes)
@@ -88,6 +89,12 @@ def call() -> int:
     env_err = prepare_env(env)
     if env_err != 0:
         return env_err
+
+    if call_function == 'switch':
+        err_code = chenv(prefix_str=cli_kwargs['switch_to'],
+                         copy=cli_kwargs.get('clipboard', False))
+        lock(env=env, message='environment switch.')
+        return err_code
 
     lock_state = lock(env=env, unlock=(call_function == 'unlock'))
     if lock_state != 0:

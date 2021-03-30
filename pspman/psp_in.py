@@ -151,8 +151,8 @@ def _shell_inform(sys_profile: Path):
         return
 
     inform = ['', 'Following shell: profiles were found.']
-    for shell, profile in found_profiles.items():
-        inform.append(f"{shell}: {str(profile)}")
+    for shell, profile_path in found_profiles.items():
+        inform.append(f"{shell}: {str(profile_path)}")
 
     inform.extend((
         '',
