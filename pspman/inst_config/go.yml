@@ -22,7 +22,6 @@ indicate:
 requires:
 - go
 env:
-  GOROOT: __prefix__
   GOPATH: __prefix__
 install:
 - go install -i __argv__ -pkgdir __code_path__
