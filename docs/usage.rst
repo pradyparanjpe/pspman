@@ -12,7 +12,6 @@ Application
    -  ``configure``, ``make``, ``make install``.
    -  ``pip --user -U install .`` .
    -  meson/ninja.
-   - go install
    - cmake build, ``make``, ``make install``
 
 -  Delete cloned directories, try deleting installation files.

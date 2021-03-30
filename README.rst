@@ -35,7 +35,6 @@ Currently supports installation of:
     - make (Makefile)
     - cmake
     - meson (ninja)
-    - go
     - `pull-only` (don't install)
 
 May be extended for other methods using instruction file. (see documentation for Extensions)

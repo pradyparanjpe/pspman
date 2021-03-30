@@ -5,7 +5,7 @@ EXTENSIONS
 **(Advanced usage)**
 
 PSPMan can be configured for any custom installation method.
-It has been configured already for `make`, `cmake`, `pip`, `meson` and `go`.
+It has been configured already for `make`, `cmake`, `pip`, and `meson`.
 Instructions for installation are provided in an instruction-file described below.
 
 

@@ -5,7 +5,6 @@ PREREQUISITES
 - `python3 <https://www.python.org/downloads/>`__
 - `make <http://ftpmirror.gnu.org/make/>`__ (for ``make install``)
 - `cmake <https://cmake.org/install/>`__ (for ``cmake build``)
-- `go <https://golang.org/doc/install>`__ (for ``go install``)
 - `meson/ninja <https://mesonbuild.com/Getting-meson.html>`__ (for meson build, ninja install)
 - A POSIX compliant shell (sh, bash, ksh, tcsh, zsh, …).
 

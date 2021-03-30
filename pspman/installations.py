@@ -281,7 +281,7 @@ def get_instruct(config: Path = None) -> typing.Dict[str, DefInstruct]:
 INST_METHODS = get_instruct(config=CONFIG.config_dir.joinpath('inst_config'))
 '''
 Methods of installation and uninstallation defined from instructions
-Default: make, cmake, pip, meson/ninja, go
+Default: make, cmake, pip, meson/ninja
 Extended for <instruct> by creating <config_dir>/inst_config/<instruct>.yml
 
 '''

@@ -103,7 +103,6 @@ def set_mod_env(switch_src: typing.IO[str], prefix: Path, name: str = None):
     if name is not None:
         print(_munge('PS1', name), file=switch_src)
     print('GCC_EXEC_PREFIX="' + str(prefix) + '/"', file=switch_src)
-    print(_munge('GOPATH', prefix), file=switch_src)
     if prefix.joinpath('bin').is_dir():
         print(_munge('PATH', prefix.joinpath('bin')), file=switch_src)
     for bitbase in "", "64":
